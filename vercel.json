@@ -1,0 +1,8 @@
+{
+  "builds": [
+    {
+      "src": "peace-haven/package.json",
+      "use": "@vercel/static-build"
+    }
+  ]
+}
