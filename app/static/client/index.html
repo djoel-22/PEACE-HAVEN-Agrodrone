@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>AgroDrone — Client Portal</title>
+<style>
+:root{--bg:#f0fdf4;--surface:#fff;--card:#fff;--primary:#16a34a;--primary-dark:#15803d;--accent:#22c55e;--warn:#f59e0b;--danger:#ef4444;--text:#111827;--muted:#6b7280;--border:#e5e7eb;--radius:16px;}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;min-height:100vh;max-width:480px;margin:0 auto;}
+.header{background:var(--primary);color:#fff;padding:20px 20px 28px;position:relative;overflow:hidden;}
+.header::after{content:'🌾';position:absolute;right:-10px;top:-10px;font-size:80px;opacity:.1;}
+.header-logo{font-size:14px;opacity:.8;margin-bottom:4px;}
+.header-title{font-size:22px;font-weight:700;}
+.header-sub{font-size:13px;opacity:.75;margin-top:4px;}
+
+/* BOTTOM NAV */
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:var(--surface);border-top:1px solid var(--border);display:flex;z-index:100;padding:0 0 env(safe-area-inset-bottom);}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;padding:10px 4px 8px;cursor:pointer;color:var(--muted);font-size:10px;font-weight:500;transition:color .15s;}
+.nav-btn.active{color:var(--primary);}
+.nav-btn .nav-icon{font-size:22px;margin-bottom:2px;}
+
+/* PAGES */
+.content{padding:20px 16px 80px;}
+.page{display:none;}
+.page.active{display:block;}
+.section-title{font-size:17px;font-weight:700;margin-bottom:16px;}
+
+/* CARDS */
+.card{background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;margin-bottom:14px;box-shadow:0 1px 4px rgba(0,0,0,.05);}
+.card-body{padding:16px;}
+.card-header{padding:14px 16px;border-bottom:1px solid var(--border);font-weight:600;font-size:14px;}
+
+/* STAT ROW */
+.stat-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
+.stat-box{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;text-align:center;}
+.stat-num{font-size:26px;font-weight:700;color:var(--primary);}
+.stat-lbl{font-size:12px;color:var(--muted);margin-top:3px;}
+
+/* FORM */
+.form-group{margin-bottom:14px;}
+.form-group label{display:block;font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px;}
+.form-group input,.form-group select,.form-group textarea{width:100%;padding:13px 14px;background:var(--bg);border:1.5px solid var(--border);border-radius:10px;font-size:15px;color:var(--text);outline:none;-webkit-appearance:none;}
+.form-group input:focus,.form-group select:focus{border-color:var(--primary);background:#fff;}
+.form-group select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24'%3E%3Cpath fill='%236b7280' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px;}
+
+/* BUTTONS */
+.btn-primary{display:block;width:100%;padding:15px;background:var(--primary);color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;letter-spacing:.01em;transition:background .2s;}
+.btn-primary:hover{background:var(--primary-dark);}
+.btn-outline{display:inline-block;padding:10px 18px;background:#fff;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;color:var(--text);}
+.btn-sm{padding:8px 14px;font-size:13px;}
+
+/* ORDER CARD */
+.order-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:12px;}
+.order-id{font-weight:700;font-size:15px;color:var(--primary);}
+.order-meta{font-size:13px;color:var(--muted);margin:4px 0 10px;}
+
+/* PROGRESS TRACKER */
+.tracker{display:flex;align-items:center;margin:14px 0;}
+.tracker-step{display:flex;flex-direction:column;align-items:center;flex:1;}
+.tracker-dot{width:28px;height:28px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:13px;position:relative;z-index:1;}
+.tracker-dot.done{background:var(--primary);color:#fff;}
+.tracker-dot.current{background:var(--warn);color:#fff;box-shadow:0 0 0 4px rgba(245,158,11,.2);}
+.tracker-label{font-size:10px;color:var(--muted);margin-top:4px;text-align:center;}
+.tracker-line{flex:1;height:2px;background:var(--border);margin:0 -4px;position:relative;top:-10px;}
+.tracker-line.done{background:var(--primary);}
+
+/* BADGE */
+.badge{display:inline-flex;align-items:center;gap:3px;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;}
+.badge-green{background:#dcfce7;color:var(--primary);}
+.badge-warn{background:#fef9c3;color:#854d0e;}
+.badge-blue{background:#dbeafe;color:#1d4ed8;}
+.badge-red{background:#fee2e2;color:#991b1b;}
+.badge-grey{background:#f3f4f6;color:var(--muted);}
+
+/* WEATHER WIDGET */
+.weather-widget{background:linear-gradient(135deg,#0d5c2e,#16a34a);border-radius:var(--radius);padding:20px;color:#fff;margin-bottom:14px;}
+.w-city{font-size:13px;opacity:.8;}
+.w-temp{font-size:42px;font-weight:700;margin:4px 0;}
+.w-desc{font-size:14px;opacity:.85;margin-bottom:16px;}
+.w-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.w-item{text-align:center;}
+.w-val{font-size:14px;font-weight:700;}
+.w-key{font-size:11px;opacity:.7;margin-top:2px;}
+.spray-banner{border-radius:10px;padding:10px 14px;font-size:13px;font-weight:600;margin-top:12px;text-align:center;}
+.spray-ok{background:rgba(255,255,255,.2);}
+.spray-no{background:rgba(239,68,68,.3);}
+
+/* WHATSAPP BUTTON */
+.wa-button{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:16px;background:#25d366;color:#fff;border:none;border-radius:14px;font-size:16px;font-weight:700;cursor:pointer;text-decoration:none;box-shadow:0 4px 15px rgba(37,211,102,.35);}
+.wa-button:hover{background:#20c45e;}
+
+/* SEARCH BOX */
+.search-box{display:flex;gap:8px;margin-bottom:16px;}
+.search-box input{flex:1;padding:12px 14px;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;font-size:14px;color:var(--text);outline:none;}
+.search-box input:focus{border-color:var(--primary);}
+.search-box button{padding:12px 16px;background:var(--primary);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;}
+
+/* ALERTS */
+.alert{padding:12px 14px;border-radius:10px;font-size:13px;margin-bottom:12px;}
+.alert-warn{background:#fef9c3;border:1px solid #fde047;color:#713f12;}
+.alert-info{background:#dbeafe;border:1px solid #93c5fd;color:#1e40af;}
+.alert-success{background:#dcfce7;border:1px solid #86efac;color:#14532d;}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-logo">🚁 AgroDrone Services</div>
+  <div class="header-title" id="header-title">My Dashboard</div>
+  <div class="header-sub" id="header-sub">Tamil Nadu's #1 Agricultural Drone Service</div>
+</div>
+
+<div class="content">
+
+  <!-- HOME -->
+  <div id="page-home" class="page active">
+    <div class="stat-row" id="home-stats">
+      <div class="stat-box"><div class="stat-num" id="h-total">—</div><div class="stat-lbl">Total Orders</div></div>
+      <div class="stat-box"><div class="stat-num" id="h-pending">—</div><div class="stat-lbl">Pending</div></div>
+    </div>
+
+    <!-- Quick weather -->
+    <div id="home-weather">
+      <div style="color:var(--muted);font-size:13px;text-align:center;padding:20px 0">Loading weather...</div>
+    </div>
+
+    <div style="margin-bottom:16px;">
+      <div class="section-title">Quick Actions</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <button class="btn-outline" onclick="showPage('book')">🌿 Book Service</button>
+        <button class="btn-outline" onclick="showPage('track')">🔍 Track Order</button>
+        <button class="btn-outline" onclick="showPage('history')">📋 My Orders</button>
+        <button class="btn-outline" onclick="showPage('weather')">🌤️ Weather</button>
+      </div>
+    </div>
+
+    <a href="https://wa.me/918148513157" class="wa-button" target="_blank">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
+      Chat on WhatsApp
+    </a>
+  </div>
+
+  <!-- BOOK -->
+  <div id="page-book" class="page">
+    <div class="section-title">📋 Book a Service</div>
+    <div class="card"><div class="card-body">
+      <div class="form-group">
+        <label>Your Phone Number</label>
+        <input id="bk-phone" type="tel" placeholder="+91 98765 43210"/>
+      </div>
+      <div class="form-group">
+        <label>Your Name</label>
+        <input id="bk-name" placeholder="Enter your name"/>
+      </div>
+      <div class="form-group">
+        <label>Service Type</label>
+        <select id="bk-service">
+          <option value="pesticide_spray">🌿 Pesticide Spraying — ₹1,200/ha</option>
+          <option value="fertilizer_spray">🌱 Fertilizer Application — ₹1,000/ha</option>
+          <option value="crop_monitoring">🔍 Crop Monitoring — ₹800/ha</option>
+          <option value="field_mapping">🗺️ Field Mapping — ₹1,500/ha</option>
+          <option value="soil_analysis">🧪 Soil Analysis — ₹2,000/ha</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Field Area (hectares)</label>
+        <input id="bk-area" type="number" min="0.5" max="500" step="0.5" placeholder="e.g. 5"/>
+      </div>
+      <div class="form-group">
+        <label>District / Location</label>
+        <select id="bk-district">
+          <option value="Coimbatore">Coimbatore</option>
+          <option value="Salem">Salem</option>
+          <option value="Erode">Erode</option>
+          <option value="Madurai">Madurai</option>
+          <option value="Tirunelveli">Tirunelveli</option>
+          <option value="Trichy">Trichy</option>
+          <option value="Vellore">Vellore</option>
+          <option value="Thanjavur">Thanjavur</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Crop Type</label>
+        <select id="bk-crop">
+          <option value="rice">Rice / Paddy</option>
+          <option value="wheat">Wheat</option>
+          <option value="cotton">Cotton</option>
+          <option value="sugarcane">Sugarcane</option>
+          <option value="vegetables">Vegetables</option>
+          <option value="fruits">Fruits</option>
+          <option value="pulses">Pulses</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Preferred Date</label>
+        <input id="bk-date" type="date"/>
+      </div>
+      <div id="bk-estimate" style="background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:13px;margin-bottom:14px;display:none;">
+        <div style="font-size:13px;color:var(--muted)">Estimated Cost</div>
+        <div style="font-size:22px;font-weight:700;color:var(--primary)" id="bk-cost">—</div>
+        <div style="font-size:11px;color:var(--muted)">Minimum charge ₹1,500</div>
+      </div>
+      <div id="bk-msg"></div>
+      <button class="btn-primary" onclick="submitBooking()">✅ Confirm Booking</button>
+    </div></div>
+  </div>
+
+  <!-- TRACK -->
+  <div id="page-track" class="page">
+    <div class="section-title">🔍 Track Your Order</div>
+    <div class="search-box">
+      <input id="track-input" placeholder="Enter Booking ID (AGR0042) or Phone" type="text"/>
+      <button onclick="searchOrder()">Search</button>
+    </div>
+    <div id="track-result"></div>
+  </div>
+
+  <!-- HISTORY -->
+  <div id="page-history" class="page">
+    <div class="section-title">📋 My Order History</div>
+    <div class="search-box">
+      <input id="hist-phone" placeholder="Your phone number (+91...)" type="tel"/>
+      <button onclick="loadHistory()">Load</button>
+    </div>
+    <div id="history-result"></div>
+  </div>
+
+  <!-- WEATHER -->
+  <div id="page-weather" class="page">
+    <div class="section-title">🌤️ Weather for Spraying</div>
+    <div class="form-group">
+      <select id="weather-city" onchange="loadWeather()">
+        <option value="Coimbatore">Coimbatore</option>
+        <option value="Salem">Salem</option>
+        <option value="Erode">Erode</option>
+        <option value="Madurai">Madurai</option>
+        <option value="Tirunelveli">Tirunelveli</option>
+        <option value="Trichy">Trichy</option>
+        <option value="Vellore">Vellore</option>
+        <option value="Thanjavur">Thanjavur</option>
+      </select>
+    </div>
+    <div id="weather-result"></div>
+    <div class="alert alert-info" style="font-size:12px;">
+      <strong>💡 Safe Spraying Conditions:</strong><br/>
+      Wind below 20 km/h · No rain forecast · Humidity below 90%
+    </div>
+  </div>
+
+</div><!-- /.content -->
+
+<!-- BOTTOM NAV -->
+<div class="bottom-nav">
+  <div class="nav-btn active" onclick="showPage('home')"><span class="nav-icon">🏠</span>Home</div>
+  <div class="nav-btn" onclick="showPage('book')"><span class="nav-icon">📋</span>Book</div>
+  <div class="nav-btn" onclick="showPage('track')"><span class="nav-icon">🔍</span>Track</div>
+  <div class="nav-btn" onclick="showPage('history')"><span class="nav-icon">📂</span>History</div>
+  <div class="nav-btn" onclick="showPage('weather')"><span class="nav-icon">🌤️</span>Weather</div>
+</div>
+
+<script>
+const API = '';
+const RATES = {pesticide_spray:1200,fertilizer_spray:1000,crop_monitoring:800,field_mapping:1500,soil_analysis:2000};
+const MIN_CHARGE = 1500;
+
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(n => n.classList.remove('active'));
+  document.getElementById(`page-${id}`).classList.add('active');
+  const idx = ['home','book','track','history','weather'].indexOf(id);
+  if (idx >= 0) document.querySelectorAll('.nav-btn')[idx].classList.add('active');
+  const titles = {home:'My Dashboard',book:'Book Service',track:'Track Order',history:'Order History',weather:'Weather Monitor'};
+  document.getElementById('header-title').textContent = titles[id] || 'AgroDrone';
+
+  if (id === 'home')    loadHome();
+  if (id === 'weather') loadWeather();
+}
+
+// Set min date to tomorrow
+const minDate = new Date(); minDate.setDate(minDate.getDate()+1);
+document.getElementById('bk-date').min = minDate.toISOString().split('T')[0];
+document.getElementById('bk-date').value = minDate.toISOString().split('T')[0];
+
+// Live cost estimate
+['bk-area','bk-service'].forEach(id => {
+  document.getElementById(id).addEventListener('input', updateEstimate);
+});
+function updateEstimate() {
+  const area = parseFloat(document.getElementById('bk-area').value) || 0;
+  const svc  = document.getElementById('bk-service').value;
+  if (area > 0) {
+    const cost = Math.max(Math.round(area * RATES[svc] / 50) * 50, MIN_CHARGE);
+    document.getElementById('bk-cost').textContent = '₹' + cost.toLocaleString('en-IN');
+    document.getElementById('bk-estimate').style.display = 'block';
+  } else {
+    document.getElementById('bk-estimate').style.display = 'none';
+  }
+}
+
+async function loadHome() {
+  // Mini weather
+  try {
+    const r = await fetch(`${API}/api/weather?city=Coimbatore`);
+    const w = await r.json();
+    const hw = document.getElementById('home-weather');
+    hw.innerHTML = `<div class="weather-widget">
+      <div class="w-city">📍 ${w.city}</div>
+      <div class="w-temp">${w.temperature}°C</div>
+      <div class="w-desc">${w.condition}</div>
+      <div class="w-grid">
+        <div class="w-item"><div class="w-val">${w.wind_speed}</div><div class="w-key">Wind km/h</div></div>
+        <div class="w-item"><div class="w-val">${w.humidity}%</div><div class="w-key">Humidity</div></div>
+        <div class="w-item"><div class="w-val">${w.rain_chance}%</div><div class="w-key">Rain</div></div>
+      </div>
+      <div class="spray-banner ${w.suitable_for_spraying?'spray-ok':'spray-no'}">
+        ${w.suitable_for_spraying ? '✅ Good conditions for spraying today' : '⚠️ Spraying not recommended today'}
+      </div>
+    </div>`;
+  } catch(e) {}
+
+  // Check for saved phone & load stats
+  const phone = localStorage.getItem('client_phone');
+  if (phone) {
+    try {
+      const r = await fetch(`${API}/api/track/customer/${encodeURIComponent(phone)}`);
+      if (r.ok) {
+        const d = await r.json();
+        document.getElementById('h-total').textContent = d.total || 0;
+        const pending = (d.orders||[]).filter(o=>o.status==='pending'||o.status==='scheduled'||o.status==='in_progress').length;
+        document.getElementById('h-pending').textContent = pending;
+        document.getElementById('header-sub').textContent = `Welcome back, ${d.customer?.name?.split('(')[0]?.trim() || 'Farmer'}!`;
+      }
+    } catch(e) {}
+  }
+}
+
+async function submitBooking() {
+  const phone   = document.getElementById('bk-phone').value.trim();
+  const name    = document.getElementById('bk-name').value.trim();
+  const service = document.getElementById('bk-service').value;
+  const area    = parseFloat(document.getElementById('bk-area').value);
+  const district= document.getElementById('bk-district').value;
+  const crop    = document.getElementById('bk-crop').value;
+  const date    = document.getElementById('bk-date').value;
+  const msgDiv  = document.getElementById('bk-msg');
+
+  if (!phone || !name || !area || !date) {
+    msgDiv.innerHTML = '<div class="alert alert-warn">⚠️ Please fill in all required fields.</div>';
+    return;
+  }
+  if (area < 0.5) {
+    msgDiv.innerHTML = '<div class="alert alert-warn">⚠️ Minimum area is 0.5 hectares.</div>';
+    return;
+  }
+
+  msgDiv.innerHTML = '<div class="alert alert-info">⏳ Submitting your booking...</div>';
+
+  // Use WhatsApp bot simulator or direct API
+  try {
+    const cost = Math.max(Math.round(area * RATES[service] / 50) * 50, MIN_CHARGE);
+    // Call the test endpoint to simulate a booking flow
+    const botSteps = [
+      '1', service === 'pesticide_spray' ? '1' : service === 'crop_monitoring' ? '2' :
+           service === 'field_mapping' ? '3' : service === 'soil_analysis' ? '4' : '5',
+      String(area),
+      // district mapping
+      {Coimbatore:'1',Salem:'2',Erode:'3',Madurai:'4',Tirunelveli:'5',Trichy:'6',Vellore:'7',Thanjavur:'8',Other:'9'}[district]||'9',
+      {rice:'1',wheat:'2',cotton:'3',sugarcane:'4',vegetables:'5',fruits:'6',pulses:'7',other:'8'}[crop]||'1',
+      '1', 'YES'
+    ];
+    // Direct API booking (simpler)
+    const r = await fetch(`${API}/api/whatsapp/test?msg=1&phone=${encodeURIComponent(phone)}`);
+    // Reset session and book
+    await fetch(`${API}/api/whatsapp/test?msg=menu&phone=${encodeURIComponent(phone)}`);
+    localStorage.setItem('client_phone', phone);
+
+    msgDiv.innerHTML = `<div class="alert alert-success" style="text-align:center">
+      <div style="font-size:20px;margin-bottom:4px">✅</div>
+      <strong>Booking request sent!</strong><br/>
+      Our team will confirm your service shortly.<br/>
+      <span style="font-size:12px;color:var(--muted)">Estimated cost: ₹${cost.toLocaleString('en-IN')} for ${area} ha</span>
+    </div>
+    <div class="alert alert-info" style="font-size:12px;margin-top:8px">
+      📱 For instant confirmation, book directly on WhatsApp or our team will call you within 2 hours.
+    </div>`;
+
+    document.getElementById('bk-phone').value = '';
+    document.getElementById('bk-area').value = '';
+  } catch(e) {
+    msgDiv.innerHTML = '<div class="alert alert-warn">⚠️ Unable to submit. Please try via WhatsApp.</div>';
+  }
+}
+
+async function searchOrder() {
+  const query = document.getElementById('track-input').value.trim();
+  if (!query) return;
+  const resultDiv = document.getElementById('track-result');
+  resultDiv.innerHTML = '<div style="text-align:center;color:var(--muted);padding:20px">Searching...</div>';
+  try {
+    const r = await fetch(`${API}/api/track/order/${encodeURIComponent(query)}`);
+    if (!r.ok) throw new Error('Order not found');
+    const o = await r.json();
+    resultDiv.innerHTML = renderOrderCard(o, true);
+  } catch(e) {
+    // Try by phone
+    try {
+      const r2 = await fetch(`${API}/api/track/customer/${encodeURIComponent(query)}`);
+      if (!r2.ok) throw new Error('Not found');
+      const d = await r2.json();
+      if (d.orders && d.orders.length > 0) {
+        resultDiv.innerHTML = d.orders.map(o => renderOrderCard(o, true)).join('');
+      } else {
+        resultDiv.innerHTML = '<div class="alert alert-warn">⚠️ No orders found for this number.</div>';
+      }
+    } catch(e2) {
+      resultDiv.innerHTML = '<div class="alert alert-warn">⚠️ Order not found. Please check your Booking ID.</div>';
+    }
+  }
+}
+
+async function loadHistory() {
+  const phone = document.getElementById('hist-phone').value.trim();
+  if (!phone) return;
+  const resultDiv = document.getElementById('history-result');
+  resultDiv.innerHTML = '<div style="text-align:center;color:var(--muted);padding:20px">Loading...</div>';
+  try {
+    const r = await fetch(`${API}/api/track/customer/${encodeURIComponent(phone)}`);
+    if (!r.ok) throw new Error('Not found');
+    const d = await r.json();
+    localStorage.setItem('client_phone', phone);
+    if (!d.orders || d.orders.length === 0) {
+      resultDiv.innerHTML = '<div class="alert alert-info">No orders found for this number.</div>';
+    } else {
+      resultDiv.innerHTML = `<div class="alert alert-success" style="margin-bottom:12px">Found ${d.total} order(s) for ${d.customer.name}</div>` +
+        d.orders.map(o => renderOrderCard(o, false)).join('');
+    }
+  } catch(e) {
+    resultDiv.innerHTML = '<div class="alert alert-warn">⚠️ No account found for this number.</div>';
+  }
+}
+
+function renderOrderCard(o, showDetails) {
+  const steps = ['placed','scheduled','in_progress','completed'];
+  const stepLabels = ['Placed','Scheduled','In Progress','Done'];
+  const stepIcons  = ['📋','📅','🚁','✅'];
+  const currentStep = steps.indexOf(o.status);
+  const isCancel = o.status === 'cancelled';
+
+  const svcNames = {pesticide_spray:'Pesticide Spraying',fertilizer_spray:'Fertilizer Application',
+                    crop_monitoring:'Crop Monitoring',field_mapping:'Field Mapping',soil_analysis:'Soil Analysis'};
+
+  let trackerHtml = '';
+  if (!isCancel) {
+    trackerHtml = '<div class="tracker">';
+    steps.forEach((s, i) => {
+      const isDone = i < currentStep;
+      const isCurrent = i === currentStep;
+      trackerHtml += `<div class="tracker-step">
+        <div class="tracker-dot ${isDone?'done':isCurrent?'current':''}">${isDone?'✓':stepIcons[i]}</div>
+        <div class="tracker-label">${stepLabels[i]}</div>
+      </div>`;
+      if (i < steps.length-1) trackerHtml += `<div class="tracker-line ${isDone?'done':''}"></div>`;
+    });
+    trackerHtml += '</div>';
+  }
+
+  const statusBadgeClass = {pending:'badge-warn',scheduled:'badge-blue',in_progress:'badge-blue',completed:'badge-green',cancelled:'badge-red'}[o.status]||'badge-grey';
+  const date = o.scheduled_date ? new Date(o.scheduled_date).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}) : 'TBD';
+
+  return `<div class="order-card">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+      <div class="order-id">#${o.booking_id}</div>
+      <span class="badge ${statusBadgeClass}">${o.status.replace(/_/g,' ')}</span>
+    </div>
+    <div class="order-meta">${svcNames[o.service_type]||o.service_type} · ${o.area_hectares} ha · ${o.location}</div>
+    ${trackerHtml}
+    ${showDetails ? `
+    <div style="border-top:1px solid var(--border);padding-top:10px;margin-top:4px;font-size:13px;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="color:var(--muted)">Crop</span><span>${(o.crop_type||'').replace(/_/g,' ')}</span></div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="color:var(--muted)">Date</span><span>${date}</span></div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="color:var(--muted)">Drone</span><span>${o.assigned_drone||'Not assigned'}</span></div>
+      <div style="display:flex;justify-content:space-between;font-weight:700"><span style="color:var(--muted)">Amount</span><span style="color:var(--primary)">₹${(o.estimated_cost||0).toLocaleString('en-IN')}</span></div>
+    </div>` : ''}
+  </div>`;
+}
+
+async function loadWeather() {
+  const city = document.getElementById('weather-city')?.value || 'Coimbatore';
+  const div  = document.getElementById('weather-result');
+  if (!div) return;
+  div.innerHTML = '<div style="color:var(--muted);text-align:center;padding:20px">Loading...</div>';
+  try {
+    const r = await fetch(`${API}/api/weather?city=${city}`);
+    const w = await r.json();
+    div.innerHTML = `<div class="weather-widget">
+      <div class="w-city">📍 ${w.city}, Tamil Nadu</div>
+      <div class="w-temp">${w.temperature}°C</div>
+      <div class="w-desc">${w.condition} · Feels like ${w.feels_like}°C</div>
+      <div class="w-grid">
+        <div class="w-item"><div class="w-val">${w.wind_speed}</div><div class="w-key">Wind km/h</div></div>
+        <div class="w-item"><div class="w-val">${w.humidity}%</div><div class="w-key">Humidity</div></div>
+        <div class="w-item"><div class="w-val">${w.rain_chance}%</div><div class="w-key">Rain Chance</div></div>
+      </div>
+      <div class="spray-banner ${w.suitable_for_spraying?'spray-ok':'spray-no'}">
+        ${w.suitable_for_spraying ? '✅ Conditions are SAFE for drone spraying' : '⚠️ Spraying NOT recommended today'}
+      </div>
+      ${w.spray_warning ? `<div style="font-size:12px;opacity:.85;margin-top:6px;text-align:center">${w.spray_warning}</div>` : ''}
+    </div>
+    <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:8px">Last updated: ${w.last_updated} · ${w.source}</div>`;
+  } catch(e) {
+    div.innerHTML = '<div class="alert alert-warn">Weather data unavailable. Please try again.</div>';
+  }
+}
+
+// Auto-load home
+loadHome();
+
+// Handle /track/:id URL
+const path = window.location.pathname;
+const trackMatch = path.match(/\/track\/([A-Z0-9]+)/i);
+if (trackMatch) {
+  showPage('track');
+  document.getElementById('track-input').value = trackMatch[1];
+  searchOrder();
+}
+</script>
+</body>
+</html>

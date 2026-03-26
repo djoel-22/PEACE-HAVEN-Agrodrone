@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AgroDrone Admin Portal</title>
+<style>
+:root{--bg:#0a0f1e;--surface:#111827;--card:#1a2236;--border:#1e2d45;--accent:#22c55e;--accent2:#3b82f6;--warn:#f59e0b;--danger:#ef4444;--text:#e2e8f0;--muted:#64748b;--radius:12px;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;min-height:100vh;display:flex;}
+#login-screen{width:100%;display:flex;align-items:center;justify-content:center;min-height:100vh;background:radial-gradient(ellipse at 50% 0%,#0d2a1a 0%,var(--bg) 70%);}
+.login-box{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:48px;width:420px;text-align:center;}
+.login-logo{font-size:48px;margin-bottom:16px;}
+.login-title{font-size:24px;font-weight:700;margin-bottom:6px;}
+.login-sub{color:var(--muted);font-size:14px;margin-bottom:32px;}
+.form-group{margin-bottom:18px;text-align:left;}
+.form-group label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px;font-weight:500;}
+.form-group input{width:100%;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;outline:none;transition:border-color .2s;}
+.form-group input:focus{border-color:var(--accent);}
+.btn{width:100%;padding:13px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;transition:opacity .2s;}
+.btn:hover{opacity:.9;}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text);}
+.btn-sm{width:auto;padding:7px 14px;font-size:13px;}
+.btn-danger{background:var(--danger);}
+.btn-warn{background:var(--warn);}
+.btn-blue{background:var(--accent2);}
+.err-msg{color:var(--danger);font-size:13px;margin-top:12px;}
+
+/* SIDEBAR */
+#app{display:none;width:100%;flex-direction:row;}
+.sidebar{width:240px;min-height:100vh;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100;}
+.sidebar-logo{padding:24px 20px;border-bottom:1px solid var(--border);}
+.sidebar-logo .brand{font-size:18px;font-weight:700;color:var(--accent);}
+.sidebar-logo .tagline{font-size:11px;color:var(--muted);margin-top:2px;}
+.nav-group{padding:16px 12px 0;}
+.nav-label{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);padding:0 8px;margin-bottom:6px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;cursor:pointer;font-size:14px;color:var(--muted);transition:all .15s;margin-bottom:2px;}
+.nav-item:hover,.nav-item.active{background:rgba(34,197,94,.1);color:var(--accent);}
+.nav-item .icon{font-size:17px;width:20px;text-align:center;}
+.sidebar-footer{margin-top:auto;padding:16px 12px;border-top:1px solid var(--border);}
+.user-chip{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;background:rgba(255,255,255,.04);}
+.user-avatar{width:34px;height:34px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:#fff;}
+.user-name{font-size:13px;font-weight:600;}
+.user-role{font-size:11px;color:var(--muted);}
+
+/* MAIN */
+.main{margin-left:240px;flex:1;padding:28px;min-height:100vh;}
+.page{display:none;}
+.page.active{display:block;}
+.page-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;}
+.page-title{font-size:22px;font-weight:700;}
+.page-sub{color:var(--muted);font-size:13px;margin-top:3px;}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:12px;font-weight:600;}
+.badge-green{background:rgba(34,197,94,.15);color:var(--accent);}
+.badge-warn{background:rgba(245,158,11,.15);color:var(--warn);}
+.badge-danger{background:rgba(239,68,68,.15);color:var(--danger);}
+.badge-blue{background:rgba(59,130,246,.15);color:var(--accent2);}
+.badge-muted{background:rgba(100,116,139,.15);color:var(--muted);}
+
+/* STAT CARDS */
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;}
+.stat-label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;}
+.stat-value{font-size:28px;font-weight:700;margin-bottom:4px;}
+.stat-sub{font-size:12px;color:var(--muted);}
+.stat-icon{float:right;font-size:28px;opacity:.5;}
+
+/* TABLE */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:20px;}
+.card-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
+.card-title{font-size:15px;font-weight:600;}
+table{width:100%;border-collapse:collapse;}
+th{padding:12px 16px;text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);border-bottom:1px solid var(--border);}
+td{padding:13px 16px;font-size:14px;border-bottom:1px solid rgba(30,45,69,.6);}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:rgba(255,255,255,.02);}
+
+/* BATTERY HEALTH BAR */
+.health-bar{height:8px;border-radius:4px;background:var(--border);overflow:hidden;width:120px;}
+.health-fill{height:100%;border-radius:4px;transition:width .3s;}
+.health-good{background:var(--accent);}
+.health-warn{background:var(--warn);}
+.health-crit{background:var(--danger);}
+
+/* CALENDAR */
+#cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-top:8px;}
+.cal-day-hdr{text-align:center;font-size:11px;color:var(--muted);padding:6px 0;text-transform:uppercase;}
+.cal-cell{min-height:90px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:6px;cursor:pointer;transition:border-color .15s;}
+.cal-cell:hover{border-color:var(--accent);}
+.cal-date{font-size:12px;color:var(--muted);margin-bottom:4px;}
+.cal-date.today{color:var(--accent);font-weight:700;}
+.cal-date.other-month{opacity:.3;}
+.cal-job{font-size:10px;padding:2px 5px;border-radius:3px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff;}
+.cal-nav{display:flex;align-items:center;gap:12px;}
+.cal-nav button{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:6px 12px;color:var(--text);cursor:pointer;font-size:13px;}
+.cal-nav button:hover{border-color:var(--accent);}
+.cal-month{font-size:16px;font-weight:600;min-width:160px;text-align:center;}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:1000;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:28px;width:500px;max-width:95vw;max-height:90vh;overflow-y:auto;}
+.modal-title{font-size:17px;font-weight:700;margin-bottom:20px;}
+.modal-footer{display:flex;gap:10px;justify-content:flex-end;margin-top:24px;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.form-group{margin-bottom:16px;}
+.form-group label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px;}
+.form-group input,.form-group select,.form-group textarea{width:100%;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;outline:none;}
+.form-group input:focus,.form-group select:focus{border-color:var(--accent);}
+.form-group select option{background:var(--surface);}
+
+/* WEATHER WIDGET */
+.weather-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+.weather-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px;}
+.weather-city{font-size:13px;color:var(--muted);margin-bottom:6px;}
+.weather-temp{font-size:32px;font-weight:700;margin-bottom:4px;}
+.weather-desc{font-size:13px;color:var(--muted);margin-bottom:12px;}
+.weather-row{display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;}
+.weather-val{font-weight:600;}
+.spray-ok{color:var(--accent);}
+.spray-no{color:var(--danger);}
+
+/* TOAST */
+.toast-container{position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px;}
+.toast{padding:12px 18px;border-radius:10px;font-size:14px;font-weight:500;animation:slideIn .2s ease;max-width:320px;}
+.toast-success{background:#166534;border:1px solid var(--accent);color:#dcfce7;}
+.toast-error{background:#7f1d1d;border:1px solid var(--danger);color:#fee2e2;}
+.toast-info{background:#1e3a5f;border:1px solid var(--accent2);color:#dbeafe;}
+@keyframes slideIn{from{transform:translateX(40px);opacity:0}to{transform:none;opacity:1}}
+
+/* TRACKING STATUS STEPS */
+.status-steps{display:flex;gap:4px;align-items:center;}
+.step{width:28px;height:6px;border-radius:3px;background:var(--border);}
+.step.done{background:var(--accent);}
+.step.active{background:var(--warn);}
+
+/* TABS */
+.tabs{display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:4px;margin-bottom:20px;width:fit-content;}
+.tab{padding:8px 16px;border-radius:7px;font-size:13px;font-weight:500;cursor:pointer;color:var(--muted);transition:all .15s;}
+.tab.active{background:var(--card);color:var(--text);}
+
+/* ALERTS PANEL */
+.alert-banner{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:10px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;gap:12px;}
+.alert-banner-warn{background:rgba(245,158,11,.1);border-color:rgba(245,158,11,.3);}
+</style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">🚁</div>
+    <div class="login-title">AgroDrone Admin</div>
+    <div class="login-sub">Secure portal — authorized personnel only</div>
+    <div class="form-group"><label>Username</label><input id="login-user" type="text" placeholder="Enter username" value="admin"/></div>
+    <div class="form-group"><label>Password</label><input id="login-pass" type="password" placeholder="Enter password" value="agrodrone2024"/></div>
+    <button class="btn" onclick="doLogin()">Sign In →</button>
+    <div id="login-err" class="err-msg"></div>
+  </div>
+</div>
+
+<!-- APP SHELL -->
+<div id="app">
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <div class="brand">🚁 AgroDrone</div>
+      <div class="tagline">Admin Console v2.0</div>
+    </div>
+    <div class="nav-group">
+      <div class="nav-label">Overview</div>
+      <div class="nav-item active" onclick="showPage('dashboard')"><span class="icon">📊</span>Dashboard</div>
+    </div>
+    <div class="nav-group">
+      <div class="nav-label">Operations</div>
+      <div class="nav-item" onclick="showPage('orders')"><span class="icon">📋</span>Order Management</div>
+      <div class="nav-item" onclick="showPage('scheduling')"><span class="icon">📅</span>Scheduling</div>
+      <div class="nav-item" onclick="showPage('drones')"><span class="icon">🚁</span>Drone Fleet</div>
+      <div class="nav-item" onclick="showPage('battery')"><span class="icon">🔋</span>Battery Health</div>
+    </div>
+    <div class="nav-group">
+      <div class="nav-label">Intelligence</div>
+      <div class="nav-item" onclick="showPage('weather')"><span class="icon">🌤️</span>Weather Monitor</div>
+      <div class="nav-item" onclick="showPage('ai-logs')"><span class="icon">🤖</span>AI Chat Logs</div>
+    </div>
+    <div class="sidebar-footer">
+      <div class="user-chip">
+        <div class="user-avatar" id="admin-avatar">A</div>
+        <div><div class="user-name" id="admin-name">Admin</div><div class="user-role">Administrator</div></div>
+      </div>
+      <button class="btn btn-outline btn-sm" style="width:100%;margin-top:10px;" onclick="logout()">Sign Out</button>
+    </div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="main">
+
+    <!-- DASHBOARD -->
+    <div id="page-dashboard" class="page active">
+      <div class="page-header">
+        <div><div class="page-title">Dashboard</div><div class="page-sub">Live platform overview</div></div>
+        <button class="btn btn-sm" onclick="loadDashboard()">↻ Refresh</button>
+      </div>
+      <div id="battery-alerts"></div>
+      <div class="stat-grid" id="stat-grid">
+        <div class="stat-card"><div class="stat-icon">📋</div><div class="stat-label">Total Orders</div><div class="stat-value" id="s-orders">—</div><div class="stat-sub">All time</div></div>
+        <div class="stat-card"><div class="stat-icon">⏳</div><div class="stat-label">Pending</div><div class="stat-value" id="s-pending">—</div><div class="stat-sub">Awaiting action</div></div>
+        <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-label">Revenue</div><div class="stat-value" id="s-rev">—</div><div class="stat-sub">Completed orders</div></div>
+        <div class="stat-card"><div class="stat-icon">👨‍🌾</div><div class="stat-label">Farmers</div><div class="stat-value" id="s-farmers">—</div><div class="stat-sub">Registered</div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div class="card">
+          <div class="card-header"><div class="card-title">Recent Orders</div><button class="btn btn-sm btn-outline" onclick="showPage('orders')">View All</button></div>
+          <table><thead><tr><th>ID</th><th>Farmer</th><th>Service</th><th>Status</th></tr></thead>
+          <tbody id="recent-orders"></tbody></table>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Drone Fleet Status</div><button class="btn btn-sm btn-outline" onclick="showPage('drones')">Manage</button></div>
+          <table><thead><tr><th>Drone</th><th>Status</th><th>Battery</th><th>Pilot</th></tr></thead>
+          <tbody id="drone-summary"></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ORDERS -->
+    <div id="page-orders" class="page">
+      <div class="page-header">
+        <div><div class="page-title">Order Management</div><div class="page-sub">Track & update all service requests</div></div>
+        <div style="display:flex;gap:8px;">
+          <select id="order-filter" onchange="loadOrders()" style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-size:13px;">
+            <option value="">All Statuses</option>
+            <option value="pending">Pending</option>
+            <option value="scheduled">Scheduled</option>
+            <option value="in_progress">In Progress</option>
+            <option value="completed">Completed</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+        </div>
+      </div>
+      <div class="card">
+        <table>
+          <thead><tr><th>Booking ID</th><th>Farmer</th><th>Service</th><th>Area</th><th>Location</th><th>Date</th><th>Status</th><th>Cost</th><th>Actions</th></tr></thead>
+          <tbody id="orders-table"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- SCHEDULING CALENDAR -->
+    <div id="page-scheduling" class="page">
+      <div class="page-header">
+        <div><div class="page-title">Scheduling</div><div class="page-sub">Calendar-based drone job assignment</div></div>
+        <button class="btn btn-sm" onclick="openJobModal(null)">+ Schedule Job</button>
+      </div>
+      <div class="card" style="padding:20px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+          <div class="cal-nav">
+            <button onclick="prevMonth()">‹</button>
+            <div class="cal-month" id="cal-month-label">—</div>
+            <button onclick="nextMonth()">›</button>
+          </div>
+          <button class="btn btn-sm btn-outline" onclick="goToday()">Today</button>
+        </div>
+        <div id="cal-grid"></div>
+      </div>
+    </div>
+
+    <!-- DRONE FLEET -->
+    <div id="page-drones" class="page">
+      <div class="page-header">
+        <div><div class="page-title">Drone Fleet</div><div class="page-sub">Manage your drone inventory</div></div>
+        <button class="btn btn-sm" onclick="openDroneModal()">+ Add Drone</button>
+      </div>
+      <div class="card">
+        <table>
+          <thead><tr><th>Drone ID</th><th>Model</th><th>Status</th><th>Pilot</th><th>Location</th><th>Flight Hrs</th><th>Actions</th></tr></thead>
+          <tbody id="drones-table"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- BATTERY HEALTH -->
+    <div id="page-battery" class="page">
+      <div class="page-header">
+        <div><div class="page-title">Battery Health Monitor</div><div class="page-sub">Cycle tracking & maintenance alerts</div></div>
+        <button class="btn btn-sm btn-outline" onclick="loadBatteries()">↻ Refresh</button>
+      </div>
+      <div id="bat-alerts-top"></div>
+      <div class="card">
+        <table>
+          <thead><tr><th>Drone ID</th><th>Cycles</th><th>Health</th><th>Alert</th><th>Last Charged</th><th>Flight Hrs</th><th>Actions</th></tr></thead>
+          <tbody id="battery-table"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- WEATHER -->
+    <div id="page-weather" class="page">
+      <div class="page-header">
+        <div><div class="page-title">Weather Monitor</div><div class="page-sub">Real-time conditions for spray decisions</div></div>
+        <button class="btn btn-sm btn-outline" onclick="loadWeather()">↻ Refresh</button>
+      </div>
+      <div class="weather-grid" id="weather-grid"></div>
+    </div>
+
+    <!-- AI LOGS -->
+    <div id="page-ai-logs" class="page">
+      <div class="page-header">
+        <div><div class="page-title">AI Chat Logs</div><div class="page-sub">Gemini API interaction history</div></div>
+      </div>
+      <div class="card">
+        <table>
+          <thead><tr><th>Time</th><th>Phone</th><th>Prompt</th><th>Response</th><th>Latency</th></tr></thead>
+          <tbody id="ai-logs-table"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- /.main -->
+</div><!-- /#app -->
+
+<!-- MODALS -->
+<div class="modal-overlay" id="modal-status">
+  <div class="modal">
+    <div class="modal-title">Update Order Status</div>
+    <input type="hidden" id="upd-order-id"/>
+    <div class="form-group"><label>New Status</label>
+      <select id="upd-status">
+        <option value="pending">Pending</option>
+        <option value="scheduled">Scheduled</option>
+        <option value="in_progress">In Progress</option>
+        <option value="completed">Completed</option>
+        <option value="cancelled">Cancelled</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Assign Drone</label><input id="upd-drone" placeholder="e.g. DRN-001"/></div>
+      <div class="form-group"><label>Assign Pilot</label><input id="upd-pilot" placeholder="Pilot name"/></div>
+    </div>
+    <div class="form-group"><label>Note</label><input id="upd-note" placeholder="Optional note..."/></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline btn-sm" onclick="closeModal('modal-status')">Cancel</button>
+      <button class="btn btn-sm" onclick="submitStatusUpdate()">Update</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-job">
+  <div class="modal">
+    <div class="modal-title" id="job-modal-title">Schedule Job</div>
+    <input type="hidden" id="job-id"/>
+    <div class="form-row">
+      <div class="form-group"><label>Drone ID</label><select id="job-drone" style="width:100%;padding:10px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);"></select></div>
+      <div class="form-group"><label>Pilot</label><input id="job-pilot" placeholder="Pilot name"/></div>
+    </div>
+    <div class="form-group"><label>Job Title</label><input id="job-title" placeholder="e.g. Pesticide spray — Ravi Kumar"/></div>
+    <div class="form-row">
+      <div class="form-group"><label>Start Date & Time</label><input id="job-start" type="datetime-local"/></div>
+      <div class="form-group"><label>End Date & Time</label><input id="job-end" type="datetime-local"/></div>
+    </div>
+    <div class="form-group"><label>Location</label><input id="job-location" placeholder="e.g. Coimbatore North"/></div>
+    <div class="form-group"><label>Link to Order (optional)</label>
+      <select id="job-order" style="width:100%;padding:10px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);">
+        <option value="">— No linked order —</option>
+      </select>
+    </div>
+    <div class="form-group"><label>Notes</label><input id="job-notes" placeholder="Optional..."/></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline btn-sm" onclick="closeModal('modal-job')">Cancel</button>
+      <button class="btn btn-danger btn-sm" id="job-delete-btn" style="display:none;" onclick="deleteJob()">Delete</button>
+      <button class="btn btn-sm" onclick="submitJob()">Save Job</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-drone">
+  <div class="modal">
+    <div class="modal-title">Add Drone</div>
+    <div class="form-row">
+      <div class="form-group"><label>Drone ID</label><input id="d-id" placeholder="e.g. DRN-004"/></div>
+      <div class="form-group"><label>Model</label><input id="d-model" placeholder="e.g. DJI Agras T40"/></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Pilot Name</label><input id="d-pilot" placeholder="Pilot name"/></div>
+      <div class="form-group"><label>Status</label>
+        <select id="d-status" style="width:100%;padding:10px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);">
+          <option value="standby">Standby</option><option value="active">Active</option>
+          <option value="maintenance">Maintenance</option><option value="offline">Offline</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group"><label>Current Location</label><input id="d-loc" placeholder="e.g. Coimbatore Base"/></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline btn-sm" onclick="closeModal('modal-drone')">Cancel</button>
+      <button class="btn btn-sm" onclick="submitDrone()">Add Drone</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-battery">
+  <div class="modal">
+    <div class="modal-title">Update Battery</div>
+    <input type="hidden" id="bat-drone-id"/>
+    <div class="form-row">
+      <div class="form-group"><label>Cycle Count</label><input id="bat-cycles" type="number" min="0"/></div>
+      <div class="form-group"><label>Max Cycles</label><input id="bat-max" type="number" min="100" value="300"/></div>
+    </div>
+    <div class="form-group"><label>Total Flight Hours</label><input id="bat-hrs" type="number" step="0.1" min="0"/></div>
+    <div class="form-group"><label>Notes</label><input id="bat-notes" placeholder="Optional..."/></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline btn-sm" onclick="closeModal('modal-battery')">Cancel</button>
+      <button class="btn btn-warn btn-sm" onclick="recordCharge()">Record Charge (+1 Cycle)</button>
+      <button class="btn btn-sm" onclick="submitBattery()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toasts"></div>
+
+<script>
+const API = '';
+let TOKEN = localStorage.getItem('adm_token') || '';
+let calYear, calMonth;
+
+// ── AUTH ─────────────────────────────────────────────────────────────────────
+async function doLogin() {
+  const u = document.getElementById('login-user').value;
+  const p = document.getElementById('login-pass').value;
+  document.getElementById('login-err').textContent = '';
+  try {
+    const r = await fetch(`${API}/api/admin/login`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({username:u, password:p})
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.detail || 'Login failed');
+    TOKEN = d.token;
+    localStorage.setItem('adm_token', TOKEN);
+    document.getElementById('admin-name').textContent = d.full_name || d.username;
+    document.getElementById('admin-avatar').textContent = (d.full_name||d.username)[0].toUpperCase();
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'flex';
+    loadDashboard();
+  } catch(e) {
+    document.getElementById('login-err').textContent = e.message;
+  }
+}
+
+function logout() {
+  localStorage.removeItem('adm_token');
+  location.reload();
+}
+
+function authHeaders() {
+  return {'Content-Type':'application/json', 'Authorization': `Bearer ${TOKEN}`};
+}
+
+async function api(url, opts={}) {
+  opts.headers = {...(opts.headers||{}), ...authHeaders()};
+  const r = await fetch(API+url, opts);
+  if (r.status === 401) { logout(); throw new Error('Session expired'); }
+  return r;
+}
+
+// Auto-login if token exists
+if (TOKEN) {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+  loadDashboard();
+}
+
+// ── NAVIGATION ────────────────────────────────────────────────────────────────
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById(`page-${id}`).classList.add('active');
+  event.currentTarget.classList.add('active');
+  const loaders = {
+    dashboard: loadDashboard, orders: loadOrders, scheduling: initCalendar,
+    drones: loadDrones, battery: loadBatteries, weather: loadWeather, 'ai-logs': loadAILogs
+  };
+  if (loaders[id]) loaders[id]();
+}
+
+// ── TOAST ─────────────────────────────────────────────────────────────────────
+function toast(msg, type='success') {
+  const c = document.getElementById('toasts');
+  const t = document.createElement('div');
+  t.className = `toast toast-${type}`;
+  t.textContent = msg;
+  c.appendChild(t);
+  setTimeout(() => t.remove(), 3500);
+}
+
+// ── MODALS ────────────────────────────────────────────────────────────────────
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// ── DASHBOARD ─────────────────────────────────────────────────────────────────
+async function loadDashboard() {
+  try {
+    const [sumR, ordR, drnR, batR] = await Promise.all([
+      api('/api/admin/summary'), api('/api/track/admin/all?limit=5'),
+      api('/api/admin/drones'), api('/api/battery/alerts/active')
+    ]);
+    const sum = await sumR.json();
+    const ords = await ordR.json();
+    const drns = await drnR.json();
+    const bat  = await batR.json();
+
+    document.getElementById('s-orders').textContent = sum.total_orders||0;
+    document.getElementById('s-pending').textContent = sum.pending||0;
+    document.getElementById('s-rev').textContent = '₹'+(sum.total_revenue||0).toLocaleString('en-IN');
+    document.getElementById('s-farmers').textContent = sum.total_farmers||0;
+
+    // Battery alerts banner
+    const alertsDiv = document.getElementById('battery-alerts');
+    if (bat.count > 0) {
+      alertsDiv.innerHTML = `<div class="alert-banner alert-banner-warn">
+        🔋 <strong>${bat.count} drone(s)</strong> have battery health warnings. 
+        <span style="cursor:pointer;text-decoration:underline;margin-left:8px;" onclick="showPage('battery')">View Battery Health →</span>
+      </div>`;
+    } else alertsDiv.innerHTML = '';
+
+    // Recent orders
+    const tbody = document.getElementById('recent-orders');
+    tbody.innerHTML = (ords.orders||[]).map(o => `
+      <tr><td><strong>#${o.booking_id}</strong></td>
+      <td>${o.customer_name}</td>
+      <td style="font-size:12px">${o.service_type.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase())}</td>
+      <td>${statusBadge(o.status)}</td></tr>`).join('');
+
+    // Drone summary
+    const dtbody = document.getElementById('drone-summary');
+    dtbody.innerHTML = (drns.drones||[]).slice(0,5).map(d => `
+      <tr><td><strong>${d.drone_id}</strong></td>
+      <td>${droneStatusBadge(d.status)}</td>
+      <td><div class="health-bar"><div class="health-fill health-${d.battery_level>50?'good':d.battery_level>25?'warn':'crit'}" style="width:${d.battery_level}%"></div></div></td>
+      <td style="font-size:12px">${d.pilot_name||'—'}</td></tr>`).join('');
+  } catch(e) { toast('Dashboard load failed: '+e.message,'error'); }
+}
+
+// ── ORDERS ────────────────────────────────────────────────────────────────────
+async function loadOrders() {
+  try {
+    const status = document.getElementById('order-filter')?.value || '';
+    const r = await api(`/api/track/admin/all?limit=100${status?'&status='+status:''}`);
+    const d = await r.json();
+    const tb = document.getElementById('orders-table');
+    tb.innerHTML = (d.orders||[]).map(o => {
+      const svc = o.service_type.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+      const dt  = o.scheduled_date ? new Date(o.scheduled_date).toLocaleDateString('en-IN') : '—';
+      return `<tr>
+        <td><strong>#${o.booking_id}</strong></td>
+        <td>${o.customer_name}<br/><span style="font-size:11px;color:var(--muted)">${o.phone}</span></td>
+        <td style="font-size:12px">${svc}</td>
+        <td>${o.area_hectares} ha</td>
+        <td style="font-size:12px">${o.location||'—'}</td>
+        <td style="font-size:12px">${dt}</td>
+        <td>${statusBadge(o.status)}</td>
+        <td>₹${(o.estimated_cost||0).toLocaleString('en-IN')}</td>
+        <td><button class="btn btn-sm btn-outline" onclick="openStatusModal(${o.id},'${o.status}','${o.assigned_drone||''}','${o.assigned_pilot||''}')">Update</button></td>
+      </tr>`;
+    }).join('') || '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:32px">No orders found</td></tr>';
+  } catch(e) { toast('Orders load failed','error'); }
+}
+
+function openStatusModal(id, status, drone, pilot) {
+  document.getElementById('upd-order-id').value = id;
+  document.getElementById('upd-status').value = status;
+  document.getElementById('upd-drone').value = drone;
+  document.getElementById('upd-pilot').value = pilot;
+  document.getElementById('upd-note').value = '';
+  openModal('modal-status');
+}
+
+async function submitStatusUpdate() {
+  const id    = document.getElementById('upd-order-id').value;
+  const status= document.getElementById('upd-status').value;
+  const drone = document.getElementById('upd-drone').value;
+  const pilot = document.getElementById('upd-pilot').value;
+  const note  = document.getElementById('upd-note').value;
+  try {
+    const r = await api(`/api/track/admin/${id}/status`, {
+      method:'PUT', body: JSON.stringify({status, assigned_drone:drone, assigned_pilot:pilot, note})
+    });
+    if (!r.ok) throw new Error((await r.json()).detail||'Error');
+    toast('Order updated!'); closeModal('modal-status'); loadOrders();
+  } catch(e) { toast(e.message,'error'); }
+}
+
+// ── CALENDAR ──────────────────────────────────────────────────────────────────
+function initCalendar() {
+  const now = new Date();
+  calYear  = now.getFullYear();
+  calMonth = now.getMonth();
+  renderCalendar();
+}
+function prevMonth() { calMonth--; if(calMonth<0){calMonth=11;calYear--;} renderCalendar(); }
+function nextMonth() { calMonth++; if(calMonth>11){calMonth=0;calYear++;} renderCalendar(); }
+function goToday()   { const n=new Date(); calYear=n.getFullYear(); calMonth=n.getMonth(); renderCalendar(); }
+
+async function renderCalendar() {
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('cal-month-label').textContent = `${months[calMonth]} ${calYear}`;
+  const firstDay = new Date(calYear, calMonth, 1).getDay();
+  const daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
+  const today = new Date();
+
+  let start = `${calYear}-${String(calMonth+1).padStart(2,'0')}-01T00:00:00`;
+  let end   = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${daysInMonth}T23:59:59`;
+
+  let jobs = [];
+  try {
+    const r = await api(`/api/schedule/jobs?start=${start}&end=${end}`);
+    const d = await r.json();
+    jobs = d.jobs || [];
+  } catch(e) {}
+
+  const grid = document.getElementById('cal-grid');
+  grid.innerHTML = '';
+  ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].forEach(d => {
+    const h = document.createElement('div');
+    h.className = 'cal-day-hdr'; h.textContent = d;
+    grid.appendChild(h);
+  });
+
+  // Empty cells before first day
+  for(let i=0;i<firstDay;i++) {
+    const c = document.createElement('div'); c.className='cal-cell';
+    const dt = new Date(calYear, calMonth, 1-firstDay+i);
+    c.innerHTML = `<div class="cal-date other-month">${dt.getDate()}</div>`;
+    grid.appendChild(c);
+  }
+
+  for(let day=1;day<=daysInMonth;day++) {
+    const c = document.createElement('div'); c.className='cal-cell';
+    const isToday = day===today.getDate() && calMonth===today.getMonth() && calYear===today.getFullYear();
+    c.innerHTML = `<div class="cal-date${isToday?' today':''}">${day}</div>`;
+    const dateStr = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    const dayJobs = jobs.filter(j => j.start && j.start.startsWith(dateStr));
+    dayJobs.forEach(j => {
+      const e = document.createElement('div');
+      e.className = 'cal-job';
+      e.style.background = j.color||'#22c55e';
+      e.textContent = j.title;
+      e.onclick = (ev) => { ev.stopPropagation(); openJobModal(j); };
+      c.appendChild(e);
+    });
+    c.onclick = () => {
+      const dt = new Date(calYear, calMonth, day, 8, 0);
+      openJobModal(null, dt.toISOString().slice(0,16));
+    };
+    grid.appendChild(c);
+  }
+}
+
+async function openJobModal(job, defaultStart='') {
+  document.getElementById('job-id').value = job?.id || '';
+  document.getElementById('job-title').value = job?.title || '';
+  document.getElementById('job-pilot').value = job?.pilot_name || '';
+  document.getElementById('job-start').value = job?.start?.slice(0,16) || defaultStart;
+  document.getElementById('job-end').value = job?.end?.slice(0,16) || '';
+  document.getElementById('job-location').value = job?.location || '';
+  document.getElementById('job-notes').value = job?.notes || '';
+  document.getElementById('job-modal-title').textContent = job ? 'Edit Job' : 'Schedule New Job';
+  document.getElementById('job-delete-btn').style.display = job ? 'block' : 'none';
+
+  // Load drones
+  try {
+    const r = await api('/api/admin/drones');
+    const d = await r.json();
+    const sel = document.getElementById('job-drone');
+    sel.innerHTML = (d.drones||[]).map(dr => `<option value="${dr.drone_id}"${job?.drone_id===dr.drone_id?' selected':''}>${dr.drone_id} — ${dr.model||''}${dr.pilot_name?' ('+dr.pilot_name+')':''}</option>`).join('');
+  } catch(e) {}
+
+  // Load pending orders
+  try {
+    const r = await api('/api/schedule/pending-orders');
+    const d = await r.json();
+    const sel = document.getElementById('job-order');
+    sel.innerHTML = '<option value="">— No linked order —</option>' +
+      (d.orders||[]).map(o => `<option value="${o.id}"${job?.service_request_id===o.id?' selected':''}>#AGR${String(o.id).padStart(4,'0')} — ${o.customer_name} — ${o.service_type.replace(/_/g,' ')}</option>`).join('');
+  } catch(e) {}
+
+  openModal('modal-job');
+}
+
+async function submitJob() {
+  const id = document.getElementById('job-id').value;
+  const body = {
+    drone_id_str: document.getElementById('job-drone').value,
+    pilot_name:   document.getElementById('job-pilot').value,
+    title:        document.getElementById('job-title').value,
+    scheduled_start: document.getElementById('job-start').value,
+    scheduled_end:   document.getElementById('job-end').value || undefined,
+    location:     document.getElementById('job-location').value,
+    notes:        document.getElementById('job-notes').value,
+    service_request_id: document.getElementById('job-order').value ? parseInt(document.getElementById('job-order').value) : undefined,
+  };
+  try {
+    const method = id ? 'PUT' : 'POST';
+    const url    = id ? `/api/schedule/jobs/${id}` : '/api/schedule/jobs';
+    const r = await api(url, {method, body: JSON.stringify(body)});
+    if (!r.ok) { const e = await r.json(); throw new Error(e.detail||'Error'); }
+    toast(id ? 'Job updated!' : 'Job scheduled!'); closeModal('modal-job'); renderCalendar();
+  } catch(e) { toast(e.message,'error'); }
+}
+
+async function deleteJob() {
+  const id = document.getElementById('job-id').value;
+  if (!confirm('Delete this job?')) return;
+  try {
+    await api(`/api/schedule/jobs/${id}`, {method:'DELETE'});
+    toast('Job deleted','info'); closeModal('modal-job'); renderCalendar();
+  } catch(e) { toast('Delete failed','error'); }
+}
+
+// ── DRONES ────────────────────────────────────────────────────────────────────
+async function loadDrones() {
+  try {
+    const r = await api('/api/admin/drones');
+    const d = await r.json();
+    const tb = document.getElementById('drones-table');
+    tb.innerHTML = (d.drones||[]).map(dr => `<tr>
+      <td><strong>${dr.drone_id}</strong></td>
+      <td>${dr.model||'—'}</td>
+      <td>${droneStatusBadge(dr.status)}</td>
+      <td>${dr.pilot_name||'—'}</td>
+      <td style="font-size:12px">${dr.current_location||'—'}</td>
+      <td>${dr.total_flight_hours}h</td>
+      <td><button class="btn btn-sm btn-blue" onclick="quickCharge('${dr.drone_id}')">+ Charge</button></td>
+    </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:32px">No drones registered</td></tr>';
+  } catch(e) { toast('Drones load failed','error'); }
+}
+
+function openDroneModal() { openModal('modal-drone'); }
+
+async function submitDrone() {
+  const body = {
+    drone_id: document.getElementById('d-id').value,
+    model:    document.getElementById('d-model').value,
+    pilot_name: document.getElementById('d-pilot').value,
+    status:   document.getElementById('d-status').value,
+    current_location: document.getElementById('d-loc').value,
+  };
+  try {
+    const r = await api('/api/admin/drones', {method:'POST', body:JSON.stringify(body)});
+    if (!r.ok) throw new Error((await r.json()).detail||'Error');
+    toast('Drone added!'); closeModal('modal-drone'); loadDrones();
+  } catch(e) { toast(e.message,'error'); }
+}
+
+async function quickCharge(droneId) {
+  try {
+    const r = await api(`/api/battery/${droneId}/charge`, {method:'POST', body:JSON.stringify({flight_hours_delta:0})});
+    const d = await r.json();
+    toast(`${droneId}: Charge recorded. Health: ${d.health_percentage}%`);
+    loadDrones();
+  } catch(e) { toast('Charge failed','error'); }
+}
+
+// ── BATTERY ───────────────────────────────────────────────────────────────────
+async function loadBatteries() {
+  try {
+    const r = await api('/api/battery/all');
+    const d = await r.json();
+    const batteries = d.batteries || [];
+
+    const criticals = batteries.filter(b=>b.alert_level==='critical');
+    const warnings  = batteries.filter(b=>b.alert_level==='warning');
+    const alertTop  = document.getElementById('bat-alerts-top');
+    alertTop.innerHTML = '';
+    if (criticals.length) {
+      alertTop.innerHTML += `<div class="alert-banner">🔴 <strong>${criticals.length} drone(s) CRITICAL</strong> — Immediate replacement recommended: ${criticals.map(b=>b.drone_id).join(', ')}</div>`;
+    }
+    if (warnings.length) {
+      alertTop.innerHTML += `<div class="alert-banner alert-banner-warn">🟡 <strong>${warnings.length} drone(s) WARNING</strong> — Monitor closely: ${warnings.map(b=>b.drone_id).join(', ')}</div>`;
+    }
+
+    const tb = document.getElementById('battery-table');
+    tb.innerHTML = batteries.map(b => {
+      const hClass = b.health_percentage >= 50 ? 'good' : b.health_percentage >= 25 ? 'warn' : 'crit';
+      const lastChg = b.last_charged_at ? new Date(b.last_charged_at).toLocaleDateString('en-IN') : 'Never';
+      return `<tr>
+        <td><strong>${b.drone_id}</strong></td>
+        <td>${b.cycle_count} / ${b.max_cycles}<br/><span style="font-size:11px;color:var(--muted)">${b.cycles_remaining} remaining</span></td>
+        <td>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div class="health-bar"><div class="health-fill health-${hClass}" style="width:${b.health_percentage}%"></div></div>
+            <span style="font-size:12px;font-weight:600">${b.health_percentage}%</span>
+          </div>
+        </td>
+        <td>${alertBadge(b.alert_level)}</td>
+        <td style="font-size:12px">${lastChg}</td>
+        <td>${b.total_flight_hours}h</td>
+        <td style="display:flex;gap:6px">
+          <button class="btn btn-sm btn-warn" onclick="openBatteryModal('${b.drone_id}',${b.cycle_count},${b.max_cycles},${b.total_flight_hours},'${b.notes||''}')">Edit</button>
+          <button class="btn btn-sm btn-blue" onclick="recordChargeModal('${b.drone_id}')">+Charge</button>
+        </td>
+      </tr>`;
+    }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:32px">No battery data</td></tr>';
+  } catch(e) { toast('Battery load failed','error'); }
+}
+
+function openBatteryModal(droneId, cycles, maxCycles, hrs, notes) {
+  document.getElementById('bat-drone-id').value = droneId;
+  document.getElementById('bat-cycles').value = cycles;
+  document.getElementById('bat-max').value = maxCycles;
+  document.getElementById('bat-hrs').value = hrs;
+  document.getElementById('bat-notes').value = notes;
+  openModal('modal-battery');
+}
+
+async function submitBattery() {
+  const droneId = document.getElementById('bat-drone-id').value;
+  const body = {
+    cycle_count: parseInt(document.getElementById('bat-cycles').value),
+    max_cycles:  parseInt(document.getElementById('bat-max').value),
+    flight_hours: parseFloat(document.getElementById('bat-hrs').value),
+    notes: document.getElementById('bat-notes').value,
+  };
+  try {
+    const r = await api(`/api/battery/${droneId}`, {method:'PUT', body:JSON.stringify(body)});
+    if (!r.ok) throw new Error((await r.json()).detail||'Error');
+    toast('Battery updated!'); closeModal('modal-battery'); loadBatteries();
+  } catch(e) { toast(e.message,'error'); }
+}
+
+async function recordCharge() {
+  const droneId = document.getElementById('bat-drone-id').value;
+  try {
+    const r = await api(`/api/battery/${droneId}/charge`, {method:'POST', body:JSON.stringify({flight_hours_delta:0})});
+    const d = await r.json();
+    toast(`Charge recorded! Health: ${d.health_percentage}%`);
+    closeModal('modal-battery'); loadBatteries();
+  } catch(e) { toast('Error','error'); }
+}
+
+async function recordChargeModal(droneId) {
+  try {
+    const r = await api(`/api/battery/${droneId}/charge`, {method:'POST', body:JSON.stringify({flight_hours_delta:0})});
+    const d = await r.json();
+    toast(`${droneId}: Charge recorded. Health ${d.health_percentage}%`);
+    loadBatteries();
+  } catch(e) { toast('Error','error'); }
+}
+
+// ── WEATHER ───────────────────────────────────────────────────────────────────
+async function loadWeather() {
+  const cities = ['Coimbatore','Salem','Madurai','Trichy','Vellore','Thanjavur'];
+  const grid = document.getElementById('weather-grid');
+  grid.innerHTML = '<div style="color:var(--muted);padding:20px">Loading weather data...</div>';
+  const cards = await Promise.all(cities.map(async c => {
+    try {
+      const r = await fetch(`${API}/api/weather?city=${c}`);
+      return await r.json();
+    } catch(e) { return null; }
+  }));
+  grid.innerHTML = cards.filter(Boolean).map(w => `
+    <div class="weather-card">
+      <div class="weather-city">📍 ${w.city}</div>
+      <div class="weather-temp">${w.temperature}°C</div>
+      <div class="weather-desc">${w.condition}</div>
+      <div class="weather-row"><span style="color:var(--muted)">💨 Wind</span><span class="weather-val">${w.wind_speed} km/h</span></div>
+      <div class="weather-row"><span style="color:var(--muted)">💧 Humidity</span><span class="weather-val">${w.humidity}%</span></div>
+      <div class="weather-row"><span style="color:var(--muted)">🌧️ Rain</span><span class="weather-val">${w.rain_chance}%</span></div>
+      <div style="margin-top:10px;font-size:12px;font-weight:600" class="${w.suitable_for_spraying?'spray-ok':'spray-no'}">
+        ${w.suitable_for_spraying ? '✅ Safe for Spraying' : '⚠️ Spraying Not Recommended'}
+      </div>
+      ${!w.suitable_for_spraying && w.spray_warning ? `<div style="font-size:11px;color:var(--muted);margin-top:4px">${w.spray_warning}</div>` : ''}
+    </div>`).join('');
+}
+
+// ── AI LOGS ───────────────────────────────────────────────────────────────────
+async function loadAILogs() {
+  try {
+    const r = await api('/api/admin/ai-logs');
+    const d = await r.json();
+    const tb = document.getElementById('ai-logs-table');
+    tb.innerHTML = (d.logs||[]).map(l => `<tr>
+      <td style="font-size:11px;white-space:nowrap">${l.created_at ? new Date(l.created_at).toLocaleString('en-IN') : '—'}</td>
+      <td style="font-size:12px">${l.phone||'—'}</td>
+      <td style="font-size:12px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${l.prompt||'—'}</td>
+      <td style="font-size:12px;max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${l.response||'—'}</td>
+      <td style="font-size:12px">${l.latency_ms ? l.latency_ms+'ms' : '—'}</td>
+    </tr>`).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:32px">No AI interactions yet</td></tr>';
+  } catch(e) {}
+}
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+function statusBadge(s) {
+  const map = {pending:'badge-warn',scheduled:'badge-blue',in_progress:'badge-blue',completed:'badge-green',cancelled:'badge-muted'};
+  const icons = {pending:'⏳',scheduled:'📅',in_progress:'🚁',completed:'✅',cancelled:'❌'};
+  return `<span class="badge ${map[s]||'badge-muted'}">${icons[s]||'•'} ${s.replace(/_/g,' ')}</span>`;
+}
+function droneStatusBadge(s) {
+  const map = {active:'badge-green',standby:'badge-blue',maintenance:'badge-warn',offline:'badge-muted'};
+  return `<span class="badge ${map[s]||'badge-muted'}">${s}</span>`;
+}
+function alertBadge(level) {
+  if(level==='critical') return '<span class="badge badge-danger">🔴 Critical</span>';
+  if(level==='warning')  return '<span class="badge badge-warn">🟡 Warning</span>';
+  return '<span class="badge badge-green">✅ Good</span>';
+}
+
+// Enter key on login
+document.getElementById('login-pass').addEventListener('keypress', e => {
+  if(e.key==='Enter') doLogin();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,1977 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgroDrone — Agricultural Intelligence Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0c0a;
+  --bg2: #0f120e;
+  --bg3: #141a13;
+  --surface: #1a2119;
+  --surface2: #1f2a1e;
+  --border: rgba(120,180,80,.12);
+  --border2: rgba(120,180,80,.2);
+  --green: #78b450;
+  --green2: #a8d878;
+  --green-dim: rgba(120,180,80,.15);
+  --amber: #e8a040;
+  --amber-dim: rgba(232,160,64,.12);
+  --red: #e05050;
+  --red-dim: rgba(224,80,80,.12);
+  --blue: #5090e0;
+  --blue-dim: rgba(80,144,224,.12);
+  --text: #e8f0e4;
+  --text2: #a8b8a4;
+  --text3: #6a7a66;
+  --nav-w: 280px;
+  --radius: 12px;
+  --radius-lg: 18px;
+  --transition: all .25s cubic-bezier(.4,0,.2,1);
+}
+
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+html { scroll-behavior:smooth; }
+
+body {
+  font-family:'DM Sans',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  min-height:100vh;
+  overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ── NOISE OVERLAY ─────────────────────────────────────── */
+body::before {
+  content:'';
+  position:fixed; inset:0;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events:none; z-index:0; opacity:.4;
+}
+
+/* ── LAYOUT ────────────────────────────────────────────── */
+.shell { display:flex; min-height:100vh; position:relative; }
+
+/* ── SIDEBAR ───────────────────────────────────────────── */
+.sidebar {
+  width:var(--nav-w);
+  background:var(--bg2);
+  border-right:1px solid var(--border);
+  display:flex; flex-direction:column;
+  position:fixed; top:0; left:0; height:100vh;
+  z-index:200; overflow:hidden;
+  transition:var(--transition);
+}
+
+.sidebar::before {
+  content:'';
+  position:absolute; top:-120px; left:-60px;
+  width:280px; height:280px;
+  background:radial-gradient(circle, rgba(120,180,80,.12) 0%, transparent 70%);
+  pointer-events:none;
+}
+
+.brand {
+  padding:28px 24px 24px;
+  border-bottom:1px solid var(--border);
+  flex-shrink:0;
+}
+
+.brand-mark {
+  display:flex; align-items:center; gap:12px; margin-bottom:6px;
+}
+
+.brand-icon {
+  width:40px; height:40px;
+  background:linear-gradient(135deg, var(--green), #4a8830);
+  border-radius:10px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:18px;
+  box-shadow:0 0 20px rgba(120,180,80,.3);
+  flex-shrink:0;
+}
+
+.brand-name {
+  font-family:'Syne',sans-serif;
+  font-size:18px; font-weight:800;
+  letter-spacing:-.5px;
+  color:var(--text);
+}
+
+.brand-name span { color:var(--green); }
+
+.brand-sub {
+  font-size:11px; color:var(--text3);
+  letter-spacing:.08em; text-transform:uppercase;
+  margin-left:52px;
+}
+
+/* Live pulse indicator */
+.live-dot {
+  display:inline-flex; align-items:center; gap:6px;
+  margin-top:10px; margin-left:52px;
+  font-size:11px; color:var(--green); font-weight:500;
+}
+.live-dot::before {
+  content:'';
+  width:7px; height:7px; border-radius:50%;
+  background:var(--green);
+  box-shadow:0 0 0 0 rgba(120,180,80,.4);
+  animation:pulse-ring 2s infinite;
+}
+@keyframes pulse-ring {
+  0% { box-shadow:0 0 0 0 rgba(120,180,80,.5); }
+  70% { box-shadow:0 0 0 8px rgba(120,180,80,0); }
+  100% { box-shadow:0 0 0 0 rgba(120,180,80,0); }
+}
+
+/* Nav */
+.nav-body { flex:1; overflow-y:auto; padding:16px 12px; }
+.nav-body::-webkit-scrollbar { width:3px; }
+.nav-body::-webkit-scrollbar-thumb { background:var(--border2); border-radius:2px; }
+
+.nav-group { margin-bottom:24px; }
+.nav-group-label {
+  font-size:10px; font-weight:600; letter-spacing:.12em;
+  text-transform:uppercase; color:var(--text3);
+  padding:0 12px; margin-bottom:6px;
+}
+
+.nav-item {
+  display:flex; align-items:center; gap:10px;
+  padding:10px 12px; border-radius:var(--radius);
+  cursor:pointer; text-decoration:none; color:var(--text2);
+  font-size:13.5px; font-weight:500;
+  transition:var(--transition);
+  position:relative; overflow:hidden;
+  margin-bottom:2px;
+  border:1px solid transparent;
+  user-select:none;
+}
+
+.nav-item::before {
+  content:'';
+  position:absolute; inset:0;
+  background:var(--green-dim);
+  opacity:0; transition:opacity .2s;
+}
+
+.nav-item:hover { color:var(--text); border-color:var(--border); }
+.nav-item:hover::before { opacity:1; }
+
+.nav-item.active {
+  color:var(--green2);
+  background:var(--green-dim);
+  border-color:var(--border2);
+}
+
+.nav-item.active .nav-icon { color:var(--green); }
+
+.nav-icon {
+  font-size:16px; width:20px; text-align:center;
+  flex-shrink:0; transition:var(--transition);
+}
+
+.nav-badge {
+  margin-left:auto;
+  background:var(--green-dim);
+  color:var(--green);
+  font-size:10px; font-weight:700;
+  padding:2px 7px; border-radius:20px;
+  border:1px solid var(--border2);
+}
+
+/* Sidebar footer */
+.sidebar-footer {
+  padding:16px; border-top:1px solid var(--border);
+  flex-shrink:0;
+}
+.sys-status {
+  display:flex; align-items:center; gap:8px;
+  font-size:12px; color:var(--text3);
+  padding:8px 10px; background:var(--surface);
+  border-radius:var(--radius); border:1px solid var(--border);
+}
+.status-dot { width:6px; height:6px; border-radius:50%; background:var(--green); flex-shrink:0; }
+
+/* ── MAIN ──────────────────────────────────────────────── */
+.main {
+  margin-left:var(--nav-w);
+  flex:1; min-width:0;
+  display:flex; flex-direction:column;
+  min-height:100vh;
+}
+
+/* Top bar */
+.topbar {
+  height:64px; padding:0 32px;
+  display:flex; align-items:center; justify-content:space-between;
+  border-bottom:1px solid var(--border);
+  background:rgba(10,12,10,.8);
+  backdrop-filter:blur(20px);
+  position:sticky; top:0; z-index:100;
+  flex-shrink:0;
+}
+
+.topbar-left h1 {
+  font-family:'Syne',sans-serif;
+  font-size:17px; font-weight:700;
+  letter-spacing:-.3px;
+}
+.topbar-left p { font-size:12px; color:var(--text3); margin-top:1px; }
+
+.topbar-right { display:flex; align-items:center; gap:10px; }
+
+.btn {
+  display:inline-flex; align-items:center; gap:7px;
+  padding:8px 16px; border-radius:var(--radius);
+  font-size:13px; font-weight:500;
+  font-family:'DM Sans',sans-serif;
+  cursor:pointer; border:none; transition:var(--transition);
+  white-space:nowrap;
+}
+.btn-ghost {
+  background:transparent; color:var(--text2);
+  border:1px solid var(--border);
+}
+.btn-ghost:hover { background:var(--surface); color:var(--text); border-color:var(--border2); }
+
+.btn-primary {
+  background:var(--green);
+  color:#0a0c0a; font-weight:600;
+}
+.btn-primary:hover { background:var(--green2); transform:translateY(-1px); box-shadow:0 4px 16px rgba(120,180,80,.3); }
+
+.btn-sm { padding:6px 12px; font-size:12px; }
+
+/* ── PAGE CONTENT ──────────────────────────────────────── */
+.page { padding:32px; flex:1; }
+
+.section { display:none; animation:fadeUp .4s cubic-bezier(.4,0,.2,1) both; }
+.section.active { display:block; }
+
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(16px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+
+/* ── METRIC CARDS ──────────────────────────────────────── */
+.metrics-row {
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:16px; margin-bottom:24px;
+}
+
+.metric-card {
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius-lg);
+  padding:22px;
+  position:relative; overflow:hidden;
+  transition:var(--transition);
+  cursor:default;
+}
+.metric-card::after {
+  content:'';
+  position:absolute; top:0; left:0; right:0; height:2px;
+  background:var(--accent, var(--green));
+  opacity:.7;
+}
+.metric-card:hover { border-color:var(--border2); transform:translateY(-2px); box-shadow:0 12px 40px rgba(0,0,0,.3); }
+
+.metric-card .mc-top {
+  display:flex; align-items:flex-start; justify-content:space-between;
+  margin-bottom:16px;
+}
+.mc-icon {
+  width:38px; height:38px; border-radius:10px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:18px;
+  background:var(--bg3);
+  border:1px solid var(--border);
+}
+.mc-badge {
+  font-size:11px; font-weight:600;
+  padding:3px 8px; border-radius:20px;
+}
+.mc-badge.up { background:rgba(120,180,80,.15); color:var(--green2); }
+.mc-badge.live { background:var(--amber-dim); color:var(--amber); }
+
+.mc-value {
+  font-family:'Syne',sans-serif;
+  font-size:30px; font-weight:800;
+  letter-spacing:-1px; line-height:1;
+  margin-bottom:4px;
+}
+.mc-label { font-size:12px; color:var(--text3); font-weight:400; text-transform:uppercase; letter-spacing:.06em; }
+
+/* ── PANELS ────────────────────────────────────────────── */
+.panel {
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius-lg);
+  overflow:hidden;
+  margin-bottom:20px;
+}
+.panel-head {
+  padding:18px 22px;
+  border-bottom:1px solid var(--border);
+  display:flex; align-items:center; justify-content:space-between;
+  background:var(--bg3);
+}
+.panel-head h3 {
+  font-family:'Syne',sans-serif;
+  font-size:14px; font-weight:700; letter-spacing:-.2px;
+}
+.panel-head p { font-size:12px; color:var(--text3); margin-top:2px; }
+.panel-body { padding:22px; }
+
+/* ── WEATHER BANNER ────────────────────────────────────── */
+.weather-banner {
+  border-radius:var(--radius-lg);
+  background:linear-gradient(135deg, #0d1f3a 0%, #0a1628 50%, #0d2040 100%);
+  border:1px solid rgba(80,144,224,.2);
+  padding:24px 28px;
+  margin-bottom:24px;
+  position:relative; overflow:hidden;
+}
+.weather-banner::before {
+  content:'';
+  position:absolute; top:-40px; right:-40px;
+  width:200px; height:200px;
+  background:radial-gradient(circle, rgba(80,144,224,.15), transparent 70%);
+}
+.wb-top { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:20px; }
+.wb-title { font-family:'Syne',sans-serif; font-size:15px; font-weight:700; color:#c8dcf8; }
+.wb-sub { font-size:12px; color:rgba(200,220,248,.5); margin-top:2px; }
+.spray-chip {
+  display:inline-flex; align-items:center; gap:6px;
+  padding:6px 14px; border-radius:20px;
+  font-size:12px; font-weight:600;
+  background:rgba(120,180,80,.15); color:var(--green2);
+  border:1px solid rgba(120,180,80,.25);
+}
+.wb-metrics { display:grid; grid-template-columns:repeat(5,1fr); gap:12px; }
+.wb-metric { text-align:center; }
+.wb-metric .v {
+  font-family:'JetBrains Mono',monospace;
+  font-size:20px; font-weight:500;
+  color:#c8dcf8; display:block; margin-bottom:4px;
+}
+.wb-metric .l { font-size:11px; color:rgba(200,220,248,.5); }
+
+/* ── TABLE ─────────────────────────────────────────────── */
+.tbl { width:100%; border-collapse:separate; border-spacing:0; }
+.tbl thead th {
+  padding:11px 16px;
+  background:var(--bg3);
+  font-size:11px; font-weight:600;
+  text-transform:uppercase; letter-spacing:.08em;
+  color:var(--text3);
+  border-bottom:1px solid var(--border);
+  white-space:nowrap;
+  text-align:left;
+}
+.tbl tbody tr {
+  border-bottom:1px solid var(--border);
+  transition:background .15s;
+}
+.tbl tbody tr:last-child td { border-bottom:none; }
+.tbl tbody tr:hover td { background:var(--surface2); }
+.tbl td {
+  padding:12px 16px;
+  font-size:13px;
+  border-bottom:1px solid var(--border);
+  vertical-align:middle;
+}
+.mono { font-family:'JetBrains Mono',monospace; font-size:12px; }
+
+/* ── STATUS CHIPS ──────────────────────────────────────── */
+.chip {
+  display:inline-flex; align-items:center; gap:5px;
+  padding:3px 10px; border-radius:20px;
+  font-size:11px; font-weight:600;
+  text-transform:uppercase; letter-spacing:.04em;
+  white-space:nowrap;
+}
+.chip::before { content:''; width:5px; height:5px; border-radius:50%; background:currentColor; }
+.chip-green  { background:rgba(120,180,80,.15); color:var(--green2); border:1px solid rgba(120,180,80,.2); }
+.chip-amber  { background:var(--amber-dim); color:var(--amber); border:1px solid rgba(232,160,64,.2); }
+.chip-blue   { background:var(--blue-dim); color:var(--blue); border:1px solid rgba(80,144,224,.2); }
+.chip-red    { background:var(--red-dim); color:var(--red); border:1px solid rgba(224,80,80,.2); }
+.chip-gray   { background:rgba(255,255,255,.05); color:var(--text3); border:1px solid var(--border); }
+
+/* ── GRID HELPERS ──────────────────────────────────────── */
+.grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+.grid-3 { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+.grid-4 { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
+
+/* ── DRONE CARD ────────────────────────────────────────── */
+.drone-card {
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius-lg);
+  overflow:hidden;
+  transition:var(--transition);
+}
+.drone-card:hover { border-color:var(--border2); transform:translateY(-2px); }
+.dc-head {
+  padding:16px 18px 12px;
+  border-bottom:1px solid var(--border);
+  background:var(--bg3);
+  display:flex; align-items:center; justify-content:space-between;
+}
+.dc-id { font-family:'Syne',sans-serif; font-size:14px; font-weight:800; }
+.dc-model { font-size:11px; color:var(--text3); margin-top:2px; }
+.dc-body { padding:14px 18px; }
+.dc-row { display:flex; justify-content:space-between; align-items:center; font-size:12px; color:var(--text2); margin-bottom:8px; }
+.dc-row:last-child { margin-bottom:0; }
+.battery-bar {
+  height:4px; border-radius:2px;
+  background:var(--bg3); margin-top:10px;
+  overflow:hidden; position:relative;
+}
+.battery-fill {
+  height:100%; border-radius:2px;
+  transition:width 1s cubic-bezier(.4,0,.2,1);
+}
+
+/* ── BAR CHART ─────────────────────────────────────────── */
+.bar-chart { display:flex; align-items:flex-end; gap:6px; height:100px; }
+.bar-col { flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; }
+.bar {
+  width:100%; border-radius:4px 4px 0 0;
+  background:linear-gradient(180deg, var(--green), rgba(120,180,80,.4));
+  min-height:4px;
+  transition:height 1s cubic-bezier(.4,0,.2,1);
+}
+.bar-lbl { font-size:10px; color:var(--text3); }
+
+/* ── PROGRESS BAR ──────────────────────────────────────── */
+.progress-row { margin-bottom:12px; }
+.pr-top { display:flex; justify-content:space-between; font-size:12px; margin-bottom:6px; }
+.pr-top span:first-child { color:var(--text2); }
+.pr-top span:last-child { font-weight:600; color:var(--green); }
+.progress-track {
+  height:6px; border-radius:3px;
+  background:var(--bg3); overflow:hidden;
+}
+.progress-fill {
+  height:100%; border-radius:3px;
+  background:linear-gradient(90deg, var(--green), var(--green2));
+  transition:width 1.2s cubic-bezier(.4,0,.2,1);
+}
+
+/* ── FILTER TABS ───────────────────────────────────────── */
+.filter-tabs { display:flex; gap:6px; flex-wrap:wrap; }
+.ftab {
+  padding:5px 14px; border-radius:20px;
+  font-size:12px; font-weight:500;
+  background:transparent; color:var(--text3);
+  border:1px solid var(--border);
+  cursor:pointer; transition:var(--transition);
+}
+.ftab:hover { color:var(--text); border-color:var(--border2); }
+.ftab.active { background:var(--green-dim); color:var(--green2); border-color:var(--border2); }
+
+/* ── WA FLOW CARDS ─────────────────────────────────────── */
+.flow-card {
+  background:var(--bg3);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  overflow:hidden;
+  transition:var(--transition);
+}
+.flow-card:hover { border-color:var(--border2); }
+.fc-head {
+  padding:10px 14px;
+  display:flex; align-items:center; gap:8px;
+  border-bottom:1px solid var(--border);
+}
+.fc-num {
+  width:22px; height:22px; border-radius:50%;
+  background:var(--green); color:#0a0c0a;
+  font-size:11px; font-weight:800;
+  display:flex; align-items:center; justify-content:center;
+  flex-shrink:0;
+}
+.fc-title { font-size:13px; font-weight:600; }
+.fc-body {
+  padding:12px 14px;
+  font-family:'JetBrains Mono',monospace;
+  font-size:11px; line-height:1.7;
+  color:var(--text2);
+  white-space:pre-wrap;
+}
+
+/* ── CONVERSATION CARD ─────────────────────────────────── */
+.conv-card {
+  background:var(--bg3);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:14px 16px;
+  display:flex; align-items:flex-start; gap:12px;
+  transition:var(--transition); margin-bottom:10px;
+}
+.conv-card:hover { border-color:var(--border2); background:var(--surface2); }
+.conv-avatar {
+  width:36px; height:36px; border-radius:50%;
+  background:linear-gradient(135deg, var(--green-dim), var(--blue-dim));
+  border:1px solid var(--border2);
+  display:flex; align-items:center; justify-content:center;
+  font-size:14px; font-weight:700; color:var(--green2);
+  flex-shrink:0;
+}
+.conv-main { flex:1; min-width:0; }
+.conv-name { font-weight:600; font-size:13.5px; }
+.conv-phone { font-size:11px; color:var(--text3); font-family:'JetBrains Mono',monospace; }
+.conv-msg { font-size:12px; color:var(--text2); margin-top:4px; font-style:italic; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.conv-meta { text-align:right; flex-shrink:0; }
+.conv-time { font-size:11px; color:var(--text3); }
+
+/* ── SETTINGS ──────────────────────────────────────────── */
+.settings-input {
+  width:100%; background:var(--bg3);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:10px 14px;
+  color:var(--text); font-size:13px; font-family:'DM Sans',sans-serif;
+  transition:var(--transition);
+  outline:none;
+}
+.settings-input:focus { border-color:var(--green); box-shadow:0 0 0 3px rgba(120,180,80,.1); }
+.settings-label { display:block; font-size:12px; font-weight:500; color:var(--text3); margin-bottom:6px; text-transform:uppercase; letter-spacing:.06em; }
+.settings-group { margin-bottom:18px; }
+
+/* ── INFO BOX ──────────────────────────────────────────── */
+.info-box {
+  background:var(--blue-dim); border:1px solid rgba(80,144,224,.2);
+  border-radius:var(--radius); padding:14px 16px;
+  font-size:13px; color:var(--text2); line-height:1.6;
+}
+.info-box code {
+  background:rgba(80,144,224,.15); color:var(--blue);
+  padding:1px 6px; border-radius:4px; font-family:'JetBrains Mono',monospace; font-size:12px;
+}
+
+/* ── EMPTY STATE ───────────────────────────────────────── */
+.empty {
+  text-align:center; padding:60px 20px; color:var(--text3);
+}
+.empty-icon { font-size:40px; margin-bottom:12px; opacity:.4; }
+.empty p { font-size:14px; }
+
+/* ── SPINNER ───────────────────────────────────────────── */
+.spinner-wrap { display:flex; align-items:center; gap:10px; padding:40px; justify-content:center; color:var(--text3); font-size:13px; }
+.spinner {
+  width:20px; height:20px; border-radius:50%;
+  border:2px solid var(--border2);
+  border-top-color:var(--green);
+  animation:spin .8s linear infinite;
+}
+@keyframes spin { to { transform:rotate(360deg); } }
+
+/* ── SCROLL STYLES ─────────────────────────────────────── */
+.tbl-wrap { overflow-x:auto; }
+.tbl-wrap::-webkit-scrollbar { height:3px; }
+.tbl-wrap::-webkit-scrollbar-thumb { background:var(--border2); }
+
+/* ── RESPONSIVE ────────────────────────────────────────── */
+@media (max-width:1200px) {
+  .metrics-row { grid-template-columns:repeat(2,1fr); }
+  .wb-metrics { grid-template-columns:repeat(3,1fr); }
+}
+@media (max-width:900px) {
+  .grid-2,.grid-3,.grid-4 { grid-template-columns:1fr; }
+}
+
+/* ── STAGGER ANIMATION ─────────────────────────────────── */
+.stagger > * { animation:fadeUp .4s cubic-bezier(.4,0,.2,1) both; }
+.stagger > *:nth-child(1) { animation-delay:.05s; }
+.stagger > *:nth-child(2) { animation-delay:.1s; }
+.stagger > *:nth-child(3) { animation-delay:.15s; }
+.stagger > *:nth-child(4) { animation-delay:.2s; }
+.stagger > *:nth-child(5) { animation-delay:.25s; }
+
+/* ── HOVER GLOW ON NAV ─────────────────────────────────── */
+.nav-item.active::after {
+  content:'';
+  position:absolute; right:-1px; top:4px; bottom:4px; width:2px;
+  background:var(--green);
+  border-radius:1px 0 0 1px;
+}
+@keyframes slideIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- SIDEBAR -->
+<nav class="sidebar" id="sidebar">
+  <div class="brand">
+    <div class="brand-mark">
+      <div class="brand-icon">🛸</div>
+      <div class="brand-name">Agro<span>Drone</span></div>
+    </div>
+    <div class="brand-sub">Intelligence Platform</div>
+    <div class="live-dot">Live · Real-time Data</div>
+  </div>
+
+  <div class="nav-body">
+    <div class="nav-group">
+      <div class="nav-group-label">Operations</div>
+      <a class="nav-item active" data-section="operations" href="#">
+        <span class="nav-icon">⬡</span> Service Operations
+      </a>
+      <a class="nav-item" data-section="requests" href="#">
+        <span class="nav-icon">◈</span> Service Requests
+        <span class="nav-badge" id="nb-requests">0</span>
+      </a>
+      <a class="nav-item" data-section="scheduling" href="#">
+        <span class="nav-icon">◷</span> Field Scheduling
+      </a>
+      <a class="nav-item" data-section="calendar" href="#">
+        <span class="nav-icon">◫</span> Service Calendar
+      </a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-label">Agricultural</div>
+      <a class="nav-item" data-section="farmers" href="#">
+        <span class="nav-icon">◉</span> Farmer Directory
+      </a>
+      <a class="nav-item" data-section="fields" href="#">
+        <span class="nav-icon">◫</span> Field Mapping
+      </a>
+      <a class="nav-item" data-section="environmental" href="#">
+        <span class="nav-icon">◌</span> Environmental
+      </a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-label">Fleet & Analytics</div>
+      <a class="nav-item" data-section="fleet" href="#">
+        <span class="nav-icon">◈</span> Drone Fleet
+      </a>
+      <a class="nav-item" data-section="analytics" href="#">
+        <span class="nav-icon">◑</span> Analytics
+      </a>
+      <a class="nav-item" data-section="communications" href="#">
+        <span class="nav-icon">◎</span> WhatsApp Hub
+      </a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-label">System</div>
+      <a class="nav-item" data-section="settings" href="#">
+        <span class="nav-icon">◧</span> Configuration
+      </a>
+    </div>
+  </div>
+
+  <div class="sidebar-footer">
+    <a href="https://wa.me/918148513157?text=Hi%2C%20I%20need%20drone%20service%20information" target="_blank" rel="noopener"
+       style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#1a2f1a;border:1px solid rgba(37,211,102,.3);border-radius:10px;text-decoration:none;margin-bottom:10px;transition:all .2s"
+       onmouseover="this.style.background='#1f3b1f';this.style.borderColor='rgba(37,211,102,.6)'"
+       onmouseout="this.style.background='#1a2f1a';this.style.borderColor='rgba(37,211,102,.3)'">
+      <div style="width:32px;height:32px;border-radius:50%;background:#25D366;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+      </div>
+      <div>
+        <div style="font-size:12px;font-weight:600;color:#25D366">Chat on WhatsApp</div>
+        <div style="font-size:10px;color:var(--text3)">Order via messaging</div>
+      </div>
+    </a>
+    <div class="sys-status">
+      <div class="status-dot"></div>
+      All systems operational
+    </div>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<main class="main">
+  <div class="topbar">
+    <div class="topbar-left">
+      <h1 id="page-title">Service Operations Dashboard</h1>
+      <p id="page-desc">Real-time monitoring of agricultural drone services</p>
+    </div>
+    <div class="topbar-right">
+      <button class="btn btn-ghost btn-sm" onclick="app.refresh()">↻ Refresh</button>
+      <button class="btn btn-primary btn-sm" onclick="app.generateReport()">↓ Export Report</button>
+    </div>
+  </div>
+
+  <div class="page">
+
+    <!-- OPERATIONS -->
+    <section class="section active" id="operations-section">
+      <div class="metrics-row stagger">
+        <div class="metric-card" style="--accent:var(--green)">
+          <div class="mc-top">
+            <div class="mc-icon">🎯</div>
+            <span class="mc-badge up">+18%</span>
+          </div>
+          <div class="mc-value" id="stat-services">—</div>
+          <div class="mc-label">Services Completed</div>
+        </div>
+        <div class="metric-card" style="--accent:var(--amber)">
+          <div class="mc-top">
+            <div class="mc-icon">📋</div>
+            <span class="mc-badge live">Live</span>
+          </div>
+          <div class="mc-value" id="stat-requests">—</div>
+          <div class="mc-label">Active Requests</div>
+        </div>
+        <div class="metric-card" style="--accent:var(--blue)">
+          <div class="mc-top">
+            <div class="mc-icon">⚡</div>
+            <span class="mc-badge up">95.8%</span>
+          </div>
+          <div class="mc-value" id="stat-hours">—</div>
+          <div class="mc-label">Flight Hours</div>
+        </div>
+        <div class="metric-card" style="--accent:var(--green2)">
+          <div class="mc-top">
+            <div class="mc-icon">₹</div>
+            <span class="mc-badge up">+22%</span>
+          </div>
+          <div class="mc-value" id="stat-revenue">—</div>
+          <div class="mc-label">Revenue Generated</div>
+        </div>
+      </div>
+
+      <div class="weather-banner" id="weather-banner">
+        <div class="wb-top">
+          <div>
+            <div class="wb-title">Live Weather — <span id="w-city-name" style="color:#a8d4f8">Chennai</span>, Tamil Nadu</div>
+            <div class="wb-sub">Source: <span id="w-source">—</span> &nbsp;·&nbsp; Updated <span id="w-time">—</span></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <select id="city-select" onchange="app.changeCity(this.value)" style="background:#0d1e38;border:1px solid rgba(100,160,220,.3);border-radius:6px;color:#c8dcf8;padding:5px 10px;font-size:12px;cursor:pointer;outline:none;font-family:inherit">
+              <option value="Chennai">Chennai</option>
+              <option value="Coimbatore">Coimbatore</option>
+              <option value="Salem">Salem</option>
+              <option value="Madurai">Madurai</option>
+              <option value="Erode">Erode</option>
+              <option value="Trichy">Trichy</option>
+              <option value="Tirunelveli">Tirunelveli</option>
+              <option value="Vellore">Vellore</option>
+            </select>
+            <div class="spray-chip" id="spray-chip">✓ Optimal Spray Conditions</div>
+          </div>
+        </div>
+        <div class="wb-metrics">
+          <div class="wb-metric"><span class="v" id="w-temp">—</span><span class="l">Temperature</span></div>
+          <div class="wb-metric"><span class="v" id="w-feels">—</span><span class="l">Feels Like</span></div>
+          <div class="wb-metric"><span class="v" id="w-hum">—</span><span class="l">Humidity</span></div>
+          <div class="wb-metric"><span class="v" id="w-wind">—</span><span class="l">Wind</span></div>
+          <div class="wb-metric"><span class="v" id="w-vis">—</span><span class="l">Visibility</span></div>
+          <div class="wb-metric"><span class="v" id="w-cond" style="font-size:12px">—</span><span class="l">Condition</span></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <div><h3>Recent Service Activity</h3><p>Latest field operations</p></div>
+        </div>
+        <div class="tbl-wrap">
+          <div id="recent-activity"><div class="spinner-wrap"><div class="spinner"></div>Loading...</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- REQUESTS -->
+    <section class="section" id="requests-section">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+        <div class="filter-tabs" id="req-filters">
+          <button class="ftab active" data-filter="all">All</button>
+          <button class="ftab" data-filter="pending">Pending</button>
+          <button class="ftab" data-filter="scheduled">Scheduled</button>
+          <button class="ftab" data-filter="in_progress">In Progress</button>
+          <button class="ftab" data-filter="completed">Completed</button>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="app.newRequest()">+ New Request</button>
+      </div>
+      <div class="panel">
+        <div class="tbl-wrap">
+          <div id="service-requests-content"><div class="spinner-wrap"><div class="spinner"></div>Loading...</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SCHEDULING -->
+    <section class="section" id="scheduling-section">
+      <div style="display:flex;gap:10px;margin-bottom:20px">
+        <button class="btn btn-primary btn-sm" onclick="app.newRequest()">+ Schedule Service</button>
+        <button class="btn btn-ghost btn-sm" onclick="app.load('scheduling')">↻ Refresh</button>
+      </div>
+      <div id="scheduling-content"><div class="spinner-wrap"><div class="spinner"></div>Loading...</div></div>
+    </section>
+
+    <!-- FARMERS -->
+    <section class="section" id="farmers-section">
+      <div style="margin-bottom:20px;display:flex;gap:12px;align-items:center">
+        <input class="settings-input" style="max-width:280px" type="text" placeholder="Search farmers..." oninput="app.filterFarmers(this.value)" id="farmer-search">
+        <span id="farmer-count" style="font-size:12px;color:var(--text3)"></span>
+      </div>
+      <div class="panel">
+        <div class="tbl-wrap">
+          <div id="farmers-content"><div class="spinner-wrap"><div class="spinner"></div>Loading...</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FIELDS -->
+    <section class="section" id="fields-section">
+      <div id="fields-content"><div class="spinner-wrap"><div class="spinner"></div>Loading...</div></div>
+    </section>
+
+    <!-- ENVIRONMENTAL -->
+    <section class="section" id="environmental-section">
+      <div id="environmental-content"><div class="spinner-wrap"><div class="spinner"></div>Loading...</div></div>
+    </section>
+
+    <!-- FLEET -->
+    <section class="section" id="fleet-section">
+      <div id="fleet-content"><div class="spinner-wrap"><div class="spinner"></div>Loading...</div></div>
+    </section>
+
+    <!-- ANALYTICS -->
+    <section class="section" id="analytics-section">
+      <div id="analytics-content"><div class="spinner-wrap"><div class="spinner"></div>Loading...</div></div>
+    </section>
+
+    <!-- COMMUNICATIONS -->
+    <section class="section" id="communications-section">
+      <div id="communications-content"><div class="spinner-wrap"><div class="spinner"></div>Loading...</div></div>
+    </section>
+
+    <!-- CALENDAR -->
+    <section class="section" id="calendar-section">
+      <div id="calendar-content"><div class="spinner-wrap"><div class="spinner"></div>Loading calendar…</div></div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section class="section" id="settings-section">
+      <div id="settings-content"></div>
+    </section>
+
+  </div><!-- /page -->
+</main>
+</div><!-- /shell -->
+
+<script>
+'use strict';
+const API = localStorage.getItem('api-url') || '';
+
+// ── HELPERS ─────────────────────────────────────────────
+async function apiFetch(path) {
+  try {
+    const r = await fetch(API + path);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return await r.json();
+  } catch(e) { console.warn('API', path, e.message); return null; }
+}
+
+function num(n) {
+  n = Number(n) || 0;
+  if (n >= 1e6) return (n/1e6).toFixed(1) + 'M';
+  if (n >= 1e3) return (n/1e3).toFixed(1) + 'K';
+  return n.toLocaleString('en-IN');
+}
+function money(n) { return 'Rs.' + num(n); }
+function svc(s) {
+  return {pesticide_spray:'Pesticide Spray',crop_monitoring:'Crop Monitoring',
+    irrigation_mapping:'Irrigation Mapping',soil_analysis:'Soil Analysis',
+    fertilizer_spray:'Fertilizer Spray',field_mapping:'Field Mapping',
+    harvest_assessment:'Harvest Assessment'}[s] || (s||'—').replace(/_/g,' ');
+}
+function loading() { return '<div class="spinner-wrap"><div class="spinner"></div>Loading…</div>'; }
+function empty(m) { return `<div class="empty-state"><div style="font-size:2rem;opacity:.3">○</div><div>${m}</div></div>`; }
+
+const STATUS_COLORS = {
+  pending:'#d4a843', scheduled:'#4a9fd4', in_progress:'#7ab648',
+  completed:'#a8d96e', cancelled:'#d45a4a', rescheduled:'#d47a4a'
+};
+const SVC_COLORS = {
+  pesticide_spray:'#5a9632', crop_monitoring:'#2a6e9e',
+  field_mapping:'#7a5e2a', soil_analysis:'#7a2a5e', fertilizer_spray:'#2a7a5e',
+  irrigation_mapping:'#2a5e7a', harvest_assessment:'#6e2a7a'
+};
+
+function chip(status) {
+  const labels = {pending:'Pending',scheduled:'Scheduled',in_progress:'In Progress',
+    completed:'Completed',cancelled:'Cancelled',rescheduled:'Rescheduled',
+    active:'Active',standby:'Standby',maintenance:'Maintenance',new:'New'};
+  const c = STATUS_COLORS[status] || '#7a9268';
+  return `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;background:${c}18;border:1px solid ${c}40;color:${c};text-transform:uppercase;letter-spacing:.04em"><span style="width:5px;height:5px;border-radius:50%;background:${c}"></span>${labels[status]||status}</span>`;
+}
+
+function animCount(id, val, prefix='', suffix='') {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const t0 = Date.now(), dur = 900;
+  (function tick() {
+    const p = Math.min((Date.now()-t0)/dur, 1);
+    const e = 1-Math.pow(1-p,3);
+    el.textContent = prefix + num(Math.floor(val*e)) + suffix;
+    if (p < 1) requestAnimationFrame(tick);
+  })();
+}
+
+const PAGES = {
+  operations:    {title:'Service Operations Dashboard',   desc:'Real-time monitoring of all drone operations'},
+  requests:      {title:'Service Requests',               desc:'Full order book — all service requests from dashboard and WhatsApp'},
+  scheduling:    {title:'Field Scheduling',               desc:'2-month operations calendar — DB-driven, updates from all sources'},
+  farmers:       {title:'Farmer Directory',               desc:'All registered farmers with WhatsApp quick-connect'},
+  fields:        {title:'Field Mapping',                  desc:'Coverage map and field statistics'},
+  environmental: {title:'Environmental Monitor',          desc:'Live weather for all Tamil Nadu districts — OpenWeatherMap'},
+  fleet:         {title:'Drone Fleet',                    desc:'Live fleet status from database — update status, battery, location'},
+  analytics:     {title:'Business Analytics',             desc:'Revenue, service mix and performance — all from DB'},
+  communications:{title:'WhatsApp Hub',                   desc:'Order flow, conversations and test messaging'},
+  calendar:     {title:'Service Calendar',        desc:'Monthly calendar of all scheduled drone operations'},
+  settings:      {title:'Settings',                       desc:'API configuration and data export'},
+};
+
+// ── APP ─────────────────────────────────────────────────
+const app = {
+  current: 'operations',
+  timer: null,
+
+  toast(msg, ok=true) {
+    let w = document.getElementById('toast-wrap');
+    if (!w) {
+      w = document.createElement('div');
+      w.id = 'toast-wrap';
+      w.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none';
+      document.body.appendChild(w);
+    }
+    const t = document.createElement('div');
+    t.style.cssText = `padding:11px 18px;border-radius:9px;font-size:13px;font-weight:500;pointer-events:all;box-shadow:0 4px 20px rgba(0,0,0,.5);background:${ok?'#1a2f14':'#2f1414'};border:1px solid ${ok?'rgba(122,182,72,.4)':'rgba(212,90,74,.4)'};color:${ok?'#a8d96e':'#f08080'};animation:slideIn .3s ease`;
+    t.textContent = (ok?'✓ ':'✕ ') + msg;
+    w.appendChild(t);
+    setTimeout(()=>{ t.style.opacity='0'; t.style.transition='.3s'; setTimeout(()=>t.remove(),300); }, 3500);
+  },
+
+  init() {
+    document.querySelectorAll('.nav-item').forEach(el => {
+      el.addEventListener('click', e => {
+        e.preventDefault(); e.stopPropagation();
+        const s = el.getAttribute('data-section');
+        if (s) this.nav(s);
+      });
+    });
+    document.querySelectorAll('#req-filters .ftab').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#req-filters .ftab').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        this.filterRequests(btn.dataset.filter);
+      });
+    });
+    this.load('operations');
+    this.timer = setInterval(() => this.load(this.current), 30000);
+  },
+
+  nav(s) {
+    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+    const navEl = document.querySelector(`[data-section="${s}"]`);
+    if (navEl) navEl.classList.add('active');
+    document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
+    const sec = document.getElementById(s+'-section');
+    if (sec) sec.classList.add('active');
+    const p = PAGES[s] || PAGES.operations;
+    const pt = document.getElementById('page-title');
+    const pd = document.getElementById('page-desc');
+    if (pt) pt.textContent = p.title;
+    if (pd) pd.textContent = p.desc;
+    this.current = s;
+    this.load(s);
+  },
+
+  refresh() { this.load(this.current); },
+
+  async load(s) {
+    const map = {
+      operations:    ()=>this.loadOps(),
+      requests:      ()=>this.loadRequests(),
+      scheduling:    ()=>this.loadScheduling(),
+      farmers:       ()=>this.loadFarmers(),
+      fields:        ()=>this.loadFields(),
+      environmental: ()=>this.loadEnv(),
+      fleet:         ()=>this.loadFleet(),
+      analytics:     ()=>this.loadAnalytics(),
+      communications:()=>this.loadComms(),
+      settings:      ()=>this.loadSettings(),
+      calendar:     ()=>this.loadCalendar(),
+    };
+    if (map[s]) await map[s]();
+  },
+
+  // ── OPERATIONS ──────────────────────────────────────────
+  async loadOps() {
+    const [stats, weather, activity] = await Promise.all([
+      apiFetch('/api/stats'),
+      apiFetch('/api/weather?city=Chennai'),
+      apiFetch('/api/requests?limit=10')
+    ]);
+    if (stats) {
+      animCount('stat-services', stats.total_bookings||stats.total_services||0);
+      animCount('stat-requests', stats.active_requests||0);
+      animCount('stat-hours',    stats.operational_hours||0, '', ' h');
+      animCount('stat-revenue',  stats.total_revenue||0, 'Rs.');
+      const nb = document.getElementById('nb-requests');
+      if (nb) nb.textContent = stats.active_requests||0;
+    }
+    if (weather) this.renderWeather(weather);
+    const ra = document.getElementById('recent-activity');
+    if (!ra) return;
+    if (!activity || activity.length === 0) {
+      ra.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text3)"><div style="font-size:32px;opacity:.3;margin-bottom:12px">○</div><div style="font-size:13px">No service activity yet. WhatsApp bookings will appear here.</div></div>';
+    } else if (activity && activity.length > 0) {
+      ra.innerHTML = `<table class="tbl"><thead><tr>
+        <th>ID</th><th>Farmer</th><th>Service</th><th>Area</th><th>Location</th><th>Scheduled</th><th>Status</th><th>Cost</th><th>Source</th>
+      </tr></thead><tbody>${activity.map(a=>`<tr>
+        <td class="mono" style="font-size:11px">#${a.id}</td>
+        <td><div style="font-weight:600;font-size:13px">${a.farmer_name||'Unknown'}</div>
+            <div style="font-size:11px;color:var(--text3)">${a.phone||''}</div></td>
+        <td style="font-size:12px">${svc(a.service_type)}</td>
+        <td class="mono" style="font-size:12px">${a.area_hectares||0} ha</td>
+        <td style="font-size:12px;color:var(--text2)">${a.location||'—'}</td>
+        <td style="font-size:11px;color:var(--text3)">${a.scheduled_date ? new Date(a.scheduled_date).toLocaleDateString('en-IN',{day:'numeric',month:'short'})+(a.time_slot?' · '+a.time_slot:'') : '—'}</td>
+        <td>${chip(a.status)}</td>
+        <td class="mono" style="font-size:12px">${money(a.estimated_cost||0)}</td>
+        <td style="font-size:10px;color:var(--text3)">${a.source||'dashboard'}</td>
+      </tr>`).join('')}</tbody></table>`;
+    } else {
+      ra.innerHTML = empty('No service activity yet. Create your first request!');
+    }
+  },
+
+  renderWeather(w) {
+    const set = (id,v)=>{ const e=document.getElementById(id); if(e) e.textContent=v; };
+    set('w-temp',  (w.temperature||'—')+'°C');
+    set('w-feels', (w.feels_like||'—')+'°C');
+    set('w-hum',   (w.humidity||'—')+'%');
+    set('w-wind',  (w.wind_speed||'—')+' km/h '+(w.wind_direction||''));
+    set('w-vis',   (w.visibility||'—')+' km');
+    set('w-cond',  w.condition||'—');
+    set('w-city-name', w.city||'Chennai');
+    const wbtitle = document.querySelector('.wb-title'); if(wbtitle) wbtitle.innerHTML = 'Live Weather &mdash; <span id="w-city-name" style="color:#a8d4f8">' + (w.city||'Chennai') + '</span>, Tamil Nadu';
+    set('w-source', w.source||'Live');
+    set('w-time',  w.last_updated||'—');
+    const sc = document.getElementById('spray-chip');
+    if (sc) {
+      sc.textContent = w.suitable_for_spraying ? '✓ Optimal — Clear to Spray' : '⚠ Hold — Conditions Poor';
+      sc.style.background = w.suitable_for_spraying ? '' : 'rgba(224,80,80,.15)';
+      sc.style.color      = w.suitable_for_spraying ? '' : 'var(--red)';
+    }
+    const sel = document.getElementById('city-select');
+    if (sel) sel.value = w.city||'Chennai';
+  },
+
+  async changeCity(city) {
+    const w = await apiFetch('/api/weather?city='+encodeURIComponent(city));
+    if (w) this.renderWeather(w);
+  },
+
+  // ── REQUESTS ────────────────────────────────────────────
+  async loadRequests() {
+    const c = document.getElementById('service-requests-content');
+    if (!c) return;
+    c.innerHTML = loading();
+    const data = await apiFetch('/api/requests?limit=500') || [];
+    if (!data.length) { c.innerHTML = empty('No requests yet'); return; }
+    c.innerHTML = `<table class="tbl" id="req-table"><thead><tr>
+      <th>ID</th><th>Farmer</th><th>Service</th><th>Area</th><th>Location</th>
+      <th>Scheduled</th><th>Slot</th><th>Status</th><th>Cost</th><th>Source</th><th>Actions</th>
+    </tr></thead><tbody>${data.map(r=>`<tr data-status="${r.status}">
+      <td class="mono" style="font-size:11px">#${r.id}</td>
+      <td><div style="font-weight:600;font-size:13px">${r.farmer_name||'Unknown'}</div>
+          <div style="font-size:11px;color:var(--text3)">${r.phone||''}</div>
+          ${r.phone ? `<a href="https://wa.me/${(r.phone||'').replace(/[^0-9]/g,'')}?text=Hi%20${encodeURIComponent(r.farmer_name||'')}%2C%20your%20drone%20service%20update" target="_blank" style="font-size:10px;color:#25D366;text-decoration:none">💬 WhatsApp</a>` : ''}
+      </td>
+      <td style="font-size:12px">${svc(r.service_type)}</td>
+      <td class="mono" style="font-size:12px">${r.area_hectares||0} ha</td>
+      <td style="font-size:12px;color:var(--text2);max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.location||'—'}</td>
+      <td style="font-size:11px;color:var(--text3)">${r.scheduled_date ? new Date(r.scheduled_date).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}) : '—'}</td>
+      <td style="font-size:11px;color:var(--text3)">${r.time_slot||'—'}</td>
+      <td>${chip(r.status)}</td>
+      <td class="mono" style="font-size:12px">${money(r.estimated_cost||0)}</td>
+      <td style="font-size:10px;color:var(--text3);text-transform:capitalize">${r.source||'dashboard'}</td>
+      <td style="display:flex;gap:4px">
+        <button class="btn btn-ghost btn-sm" onclick="app.updateStatus(${r.id})">Update</button>
+        <button class="btn btn-ghost btn-sm" onclick="app.scheduleExisting(${r.id},'${(r.farmer_name||'').replace(/'/g,"\\'")}','','${r.area_hectares||0}','${(r.location||'').replace(/'/g,"\\'")}')">Schedule</button>
+      </td>
+    </tr>`).join('')}</tbody></table>`;
+  },
+
+  filterRequests(f) {
+    document.querySelectorAll('#req-table tbody tr').forEach(r=>{
+      r.style.display = (f==='all'||r.dataset.status===f) ? '' : 'none';
+    });
+  },
+
+  // ── SCHEDULING — DB-DRIVEN 2-MONTH CALENDAR ────────────
+  async loadScheduling() {
+    const c = document.getElementById('scheduling-content');
+    if (!c) return;
+    c.innerHTML = loading();
+    const [allData, fleetData] = await Promise.all([
+      apiFetch('/api/requests?limit=500'),
+      apiFetch('/api/fleet')
+    ]);
+    const data = allData || [];
+    const drones = (fleetData||{}).drones || [];
+
+    // Build day map keyed by YYYY-MM-DD
+    const byDay = {};
+    data.forEach(r => {
+      const raw = r.scheduled_date || r.scheduled_date;
+      if (!raw) return;
+      const d = new Date(raw);
+      const key = d.toISOString().slice(0,10);
+      if (!byDay[key]) byDay[key] = [];
+      byDay[key].push({...r, _hour: d.getHours()});
+    });
+
+    const today = new Date();
+    const todayKey = today.toISOString().slice(0,10);
+    const NUM_DAYS = 62;
+    const calDays = Array.from({length:NUM_DAYS},(_,i)=>{ const d=new Date(today); d.setDate(today.getDate()+i); return d; });
+
+    // Pad to week start (Monday)
+    const startDow = (calDays[0].getDay()+6)%7;
+    const gridCells = Array(startDow).fill(null);
+    calDays.forEach(d=>gridCells.push(d));
+    while (gridCells.length%7!==0) gridCells.push(null);
+
+    const pending = data.filter(r=>r.status==='pending').length;
+    const scheduled = data.filter(r=>r.status==='scheduled').length;
+    const todayJobs = (byDay[todayKey]||[]).length;
+    const activeDrones = drones.filter(d=>d.status==='active').length;
+
+    c.innerHTML = `
+    <!-- STATS BAR -->
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px">
+      ${[
+        {v:todayJobs,     l:"Today",         c:'#7ab648'},
+        {v:scheduled,     l:'Scheduled',     c:'#4a9fd4'},
+        {v:pending,       l:'Pending',       c:'#d4a843'},
+        {v:activeDrones+'/'+drones.length,l:'Drones',c:'#7ab648'},
+        {v:data.filter(r=>r.status==='completed').length, l:'Completed', c:'#a8d96e'}
+      ].map(m=>`<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;position:relative;overflow:hidden">
+        <div style="position:absolute;top:0;left:0;right:0;height:2px;background:${m.c}"></div>
+        <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">${m.l}</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:600;color:${m.c}">${m.v}</div>
+      </div>`).join('')}
+    </div>
+
+    <!-- TWO COL -->
+    <div style="display:grid;grid-template-columns:1fr 270px;gap:16px;align-items:start">
+
+      <!-- CALENDAR -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">
+        <div style="padding:14px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px">Operations Calendar</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:1px">${calDays[0].toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'})} — ${calDays[NUM_DAYS-1].toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'})}</div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="app.scheduleNewRequest()">+ Schedule Job</button>
+        </div>
+        <!-- DOW headers -->
+        <div style="display:grid;grid-template-columns:repeat(7,1fr);background:var(--bg3);border-bottom:1px solid var(--border)">
+          ${['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d=>`<div style="padding:7px;text-align:center;font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em">${d}</div>`).join('')}
+        </div>
+        <!-- GRID -->
+        <div style="display:grid;grid-template-columns:repeat(7,1fr)">
+          ${gridCells.map(d => {
+            if (!d) return `<div style="min-height:80px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);background:rgba(0,0,0,.15);opacity:.3"></div>`;
+            const key = d.toISOString().slice(0,10);
+            const isToday = key===todayKey;
+            const isPast = d < today && !isToday;
+            const jobs = byDay[key] || [];
+            const isNewMonth = d.getDate()===1;
+            const hasCancelled = jobs.some(j=>j.status==='cancelled');
+            const hasPending = jobs.some(j=>j.status==='pending');
+            return `<div style="min-height:80px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);background:${isToday?'rgba(122,182,72,.07)':isPast?'rgba(0,0,0,.1)':'transparent'};cursor:${jobs.length?'pointer':'default'}"
+                        ${jobs.length ? `onclick="app.showDayModal('${key}',${JSON.stringify(JSON.stringify(jobs)).slice(1,-1)})"` : ''}>
+              <div style="padding:4px 5px;display:flex;justify-content:space-between;align-items:flex-start">
+                <div>
+                  ${isNewMonth?`<div style="font-size:8px;font-weight:700;color:var(--text3);text-transform:uppercase">${d.toLocaleDateString('en-IN',{month:'short'})}</div>`:''}
+                  <div style="width:20px;height:20px;display:flex;align-items:center;justify-content:center;border-radius:50%;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:${isToday?700:400};${isToday?'background:var(--green2);color:#0a1208':'color:'+(isPast?'var(--text3)':'var(--text)')}">${d.getDate()}</div>
+                </div>
+                ${jobs.length?`<div style="display:flex;gap:2px;flex-wrap:wrap;justify-content:flex-end">
+                  ${hasCancelled?`<span style="background:rgba(212,90,74,.2);color:#d45a4a;font-size:7px;font-weight:700;padding:1px 4px;border-radius:3px">✕ CANCEL</span>`:''}
+                  ${hasPending?`<span style="background:rgba(212,168,67,.2);color:#d4a843;font-size:7px;font-weight:700;padding:1px 4px;border-radius:3px">PENDING</span>`:''}
+                  <span style="background:rgba(122,182,72,.15);color:#7ab648;font-size:8px;font-weight:700;padding:1px 5px;border-radius:10px">${jobs.length}</span>
+                </div>`:''}
+              </div>
+              <div style="padding:0 4px 4px">
+                ${jobs.slice(0,2).map(r=>{
+                  const col = STATUS_COLORS[r.status] || SVC_COLORS[r.service_type] || '#5a6238';
+                  const hr = r._hour||7;
+                  const t = (hr<10?'0'+hr:hr)+':00';
+                  return `<div style="border-left:2px solid ${col};background:${col}18;border-radius:0 3px 3px 0;padding:2px 4px;margin-bottom:2px;overflow:hidden">
+                    <div style="font-size:8px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t} ${r.farmer_name||'Farmer'}</div>
+                    <div style="font-size:8px;color:var(--text3)">${svc(r.service_type).split(' ')[0]}</div>
+                  </div>`;
+                }).join('')}
+                ${jobs.length>2?`<div style="font-size:8px;color:var(--text3);padding:1px 4px">+${jobs.length-2} more</div>`:''}
+              </div>
+            </div>`;
+          }).join('')}
+        </div>
+        <!-- STATUS LEGEND -->
+        <div style="padding:10px 16px;border-top:1px solid var(--border);display:flex;gap:14px;flex-wrap:wrap">
+          ${Object.entries(STATUS_COLORS).map(([s,c])=>`<div style="display:flex;align-items:center;gap:5px"><div style="width:8px;height:8px;border-radius:2px;background:${c}"></div><span style="font-size:10px;color:var(--text3);text-transform:capitalize">${s.replace('_',' ')}</span></div>`).join('')}
+        </div>
+      </div>
+
+      <!-- SIDEBAR -->
+      <div style="display:flex;flex-direction:column;gap:12px;position:sticky;top:80px">
+        <!-- FLEET -->
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">
+          <div style="padding:10px 14px;border-bottom:1px solid var(--border)"><div style="font-family:'Syne',sans-serif;font-weight:700;font-size:12px">Fleet Today</div></div>
+          ${drones.map(d=>{
+            const sc={active:'#7ab648',maintenance:'#d45a4a',standby:'#d4a843'}[d.status]||'#7a9268';
+            const bl = d.battery_level||0;
+            return `<div style="padding:8px 14px;border-bottom:1px solid var(--border)">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
+                <span style="font-size:11px;font-weight:600;font-family:'JetBrains Mono',monospace">${d.drone_id||d.id}</span>
+                <span style="font-size:9px;font-weight:700;color:${sc};text-transform:uppercase">${d.status}</span>
+              </div>
+              <div style="font-size:9px;color:var(--text3);margin-bottom:3px">${d.pilot||'—'} · ${d.current_location||'—'}</div>
+              <div style="height:3px;background:var(--bg3);border-radius:2px;overflow:hidden">
+                <div style="height:100%;width:${bl}%;background:${bl>50?'#7ab648':bl>20?'#d4a843':'#d45a4a'};border-radius:2px"></div>
+              </div>
+              <div style="font-size:9px;color:var(--text3);margin-top:1px">${bl}% battery · ${d.flight_hours_today||0}h today</div>
+            </div>`;
+          }).join('')}
+        </div>
+        <!-- PENDING QUEUE -->
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">
+          <div style="padding:10px 14px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+            <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:12px">Pending Queue</div>
+            ${pending?`<span style="background:rgba(212,168,67,.15);border:1px solid rgba(212,168,67,.3);color:#d4a843;font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px">${pending}</span>`:''}
+          </div>
+          ${data.filter(r=>r.status==='pending').slice(0,5).map(r=>`
+            <div style="padding:8px 14px;border-bottom:1px solid var(--border);cursor:pointer" onclick="app.scheduleExisting(${r.id},'${(r.farmer_name||'').replace(/'/g,"\\'")}','','${r.area_hectares||0}','${(r.location||'').replace(/'/g,"\\'")}')">
+              <div style="font-size:11px;font-weight:600">${r.farmer_name||'Unknown'}</div>
+              <div style="font-size:10px;color:var(--text3)">${svc(r.service_type)} · ${r.area_hectares||0}ha</div>
+              <div style="font-size:10px;color:var(--text4)">${r.location||'TN'} · <span style="color:#d4a843">Tap to schedule →</span></div>
+            </div>`).join('') || '<div style="padding:14px;text-align:center;color:var(--text3);font-size:12px">No pending requests</div>'}
+        </div>
+      </div>
+    </div>
+
+    <!-- DAY DETAIL MODAL -->
+    <div id="day-modal" onclick="document.getElementById('day-modal').style.display='none'"
+         style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:500;align-items:center;justify-content:center">
+      <div id="day-modal-inner" onclick="event.stopPropagation()"
+           style="background:#1a2012;border:1px solid #2a3520;border-radius:14px;width:500px;max-height:85vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.6)"></div>
+    </div>`;
+  },
+
+  showDayModal(dateKey, jobsJson) {
+    const jobs = JSON.parse(jobsJson);
+    const d = new Date(dateKey);
+    const modal = document.getElementById('day-modal');
+    const inner = document.getElementById('day-modal-inner');
+    if (!modal||!inner) return;
+    inner.innerHTML = `
+      <div style="padding:16px 20px;border-bottom:1px solid #2a3520;display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:15px;color:#e8f0df">${d.toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</div>
+          <div style="font-size:11px;color:#7a9268;margin-top:1px">${jobs.length} service${jobs.length!==1?'s':''} — click a job to update</div>
+        </div>
+        <button onclick="document.getElementById('day-modal').style.display='none'" style="background:none;border:none;color:#7a9268;font-size:20px;cursor:pointer">✕</button>
+      </div>
+      <div style="padding:12px">
+        ${jobs.sort((a,b)=>(a._hour||7)-(b._hour||7)).map(r=>{
+          const sc = STATUS_COLORS[r.status]||'#7a9268';
+          const hr = r._hour||7;
+          return `<div style="border:1px solid #2a3520;border-left:3px solid ${sc};border-radius:0 8px 8px 0;padding:12px 14px;margin-bottom:8px;background:${sc}10">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
+              <div>
+                <div style="font-weight:600;font-size:13px;color:#e8f0df">${r.farmer_name||'Unknown'}</div>
+                <div style="font-size:11px;color:#7a9268">${r.phone||'—'}</div>
+              </div>
+              <div style="text-align:right">
+                <div style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;color:${sc}">${(hr<10?'0'+hr:hr)+':00'}</div>
+                <div style="font-size:10px;color:#7a9268">${r.time_slot||''}</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+              <span style="background:${sc}20;border:1px solid ${sc}40;border-radius:20px;padding:2px 8px;font-size:10px;color:${sc}">${chip(r.status)}</span>
+              <span style="background:rgba(255,255,255,.05);border-radius:20px;padding:2px 8px;font-size:10px;color:#7a9268">${svc(r.service_type)}</span>
+              <span style="background:rgba(255,255,255,.05);border-radius:20px;padding:2px 8px;font-size:10px;color:#7a9268">${r.area_hectares||0}ha · ${r.location||'TN'}</span>
+              <span style="background:rgba(255,255,255,.05);border-radius:20px;padding:2px 8px;font-size:10px;color:#7a9268">${money(r.estimated_cost||0)}</span>
+            </div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              ${['scheduled','in_progress','completed','cancelled'].map(s=>
+                `<button onclick="app.quickStatus(${r.id},'${s}')" style="padding:4px 10px;border-radius:6px;font-size:10px;font-weight:600;cursor:pointer;border:1px solid ${STATUS_COLORS[s]}40;background:${STATUS_COLORS[s]}15;color:${STATUS_COLORS[s]};font-family:inherit">${s.replace('_',' ')}</button>`
+              ).join('')}
+            </div>
+          </div>`;
+        }).join('')}
+        <button onclick="app.scheduleNewRequest()" style="width:100%;padding:10px;background:rgba(122,182,72,.08);border:1px dashed rgba(122,182,72,.3);border-radius:8px;color:#7ab648;font-family:inherit;font-size:12px;cursor:pointer;margin-top:4px">+ Add service on this day</button>
+      </div>`;
+    modal.style.display = 'flex';
+  },
+
+  async quickStatus(id, status) {
+    const r = await fetch(API+'/api/requests/'+id+'/status', {
+      method:'PUT', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({status: status})
+    });
+    if (r.ok) {
+      this.toast('Status → '+status);
+      document.getElementById('day-modal').style.display = 'none';
+      this.load('scheduling');
+    } else this.toast('Failed to update', false);
+  },
+
+  // ── FARMERS ─────────────────────────────────────────────
+  async loadFarmers() {
+    const c = document.getElementById('farmers-content');
+    if (!c) return;
+    c.innerHTML = loading();
+    const data = await apiFetch('/api/farmers') || [];
+    const fc = document.getElementById('farmer-count');
+    if (fc) fc.textContent = data.length + ' registered';
+    if (!data.length) { c.innerHTML = empty('No farmers yet'); return; }
+    c.innerHTML = `<table class="tbl" id="farmers-table"><thead><tr>
+      <th>Farmer</th><th>Contact</th><th>Location</th><th>Services</th><th>Area</th><th>Last Service</th><th>Status</th>
+    </tr></thead><tbody>${data.map(f=>`<tr>
+      <td style="font-weight:600;font-size:13px">${f.name||'Unknown'}</td>
+      <td>
+        <div class="mono" style="font-size:12px">${f.phone||'—'}</div>
+        ${f.whatsapp||f.phone ? `<a href="https://wa.me/${(f.whatsapp||f.phone||'').replace(/[^0-9]/g,'')}?text=Hello%20${encodeURIComponent(f.name||'')}%2C%20AgroDrone%20team%20here!" target="_blank" style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;background:#1a2f1a;border:1px solid rgba(37,211,102,.3);border-radius:20px;text-decoration:none;font-size:10px;font-weight:600;color:#25D366;margin-top:3px"><svg width="10" height="10" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>WhatsApp</a>` : ''}
+      </td>
+      <td style="font-size:12px;color:var(--text2)">${f.location||'—'}</td>
+      <td style="text-align:center;font-weight:600;color:var(--green)">${f.total_bookings||f.total_services||0}</td>
+      <td class="mono" style="font-size:12px">${f.total_area_hectares||0} ha</td>
+      <td style="font-size:11px;color:var(--text3)">${f.last_service ? new Date(f.last_service).toLocaleDateString('en-IN') : 'Never'}</td>
+      <td>${chip(f.total_services>0?'active':'pending')}</td>
+    </tr>`).join('')}</tbody></table>`;
+  },
+
+  filterFarmers(q) {
+    q = q.toLowerCase();
+    document.querySelectorAll('#farmers-table tbody tr').forEach(r=>{
+      r.style.display = r.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+  },
+
+  // ── FIELDS ──────────────────────────────────────────────
+
+  async loadFields() {
+    const c = document.getElementById('fields-content');
+    if (!c) return;
+    c.innerHTML = loading();
+    const data = await apiFetch('/api/requests?limit=500') || [];
+    const totalArea = data.reduce((s,r)=>s+(r.area_hectares||0),0);
+    const locs = [...new Set(data.map(r=>(r.location||'').split(',')[0].trim()).filter(Boolean))];
+    const avgArea = data.length ? (totalArea/data.length).toFixed(1) : 0;
+    c.innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
+        ${[{v:data.length,l:'Fields Serviced',c:'#7ab648'},{v:totalArea.toFixed(1)+' ha',l:'Total Area',c:'#4a9fd4'},{v:locs.length,l:'Districts',c:'#d4a843'},{v:avgArea+' ha',l:'Avg Field Size',c:'#a8d96e'}]
+          .map(m=>`<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;position:relative;overflow:hidden"><div style="position:absolute;top:0;left:0;right:0;height:2px;background:${m.c}"></div><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">${m.l}</div><div style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:600;color:${m.c}">${m.v}</div></div>`).join('')}
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">
+        <div style="padding:12px 16px;border-bottom:1px solid var(--border)"><div style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px">Field Records</div></div>
+        <table class="tbl"><thead><tr><th>Farmer</th><th>Location</th><th>Area</th><th>Service</th><th>Crop</th><th>Status</th><th>Date</th></tr></thead>
+        <tbody>${data.map(r=>`<tr>
+          <td style="font-weight:600">${r.farmer_name||'—'}</td>
+          <td style="font-size:12px;color:var(--text2)">${r.location||'—'}</td>
+          <td class="mono" style="font-size:12px">${r.area_hectares||0} ha</td>
+          <td style="font-size:12px">${svc(r.service_type)}</td>
+          <td style="font-size:12px;color:var(--text3)">${r.crop_type||'—'}</td>
+          <td>${chip(r.status)}</td>
+          <td style="font-size:11px;color:var(--text3)">${r.created_date?new Date(r.created_date).toLocaleDateString('en-IN'):'—'}</td>
+        </tr>`).join('')}</tbody></table>
+      </div>`;
+  },
+
+  // ── ENVIRONMENTAL — FULL OWM ─────────────────────────────
+  async loadEnv() {
+    const c = document.getElementById('environmental-content');
+    if (!c) return;
+    c.innerHTML = `<div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap">
+      <div style="position:relative;flex:1;min-width:200px">
+        <input id="city-search" type="text" placeholder="Search city…" oninput="app.filterCities(this.value)"
+          style="width:100%;padding:9px 12px 9px 36px;background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius2);color:var(--text);font-family:inherit;font-size:13px;outline:none">
+        <span style="position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:13px">⌕</span>
+      </div>
+      <button onclick="app.loadAllCities()" class="btn btn-primary btn-sm">↺ Refresh All</button>
+    </div>
+    <div id="city-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px">${loading()}</div>`;
+    this.loadAllCities();
+  },
+
+  async loadAllCities() {
+    const grid = document.getElementById('city-grid');
+    if (!grid) return;
+    grid.innerHTML = loading();
+    const cities = await apiFetch('/api/weather/all-cities') || [];
+    this._cityData = cities;
+    this.renderCityGrid(cities);
+  },
+
+  filterCities(q) {
+    if (!this._cityData) return;
+    const filtered = q ? this._cityData.filter(c=>(c.city||'').toLowerCase().includes(q.toLowerCase())) : this._cityData;
+    this.renderCityGrid(filtered);
+  },
+
+  renderCityGrid(cities) {
+    const grid = document.getElementById('city-grid');
+    if (!grid) return;
+    if (!cities.length) { grid.innerHTML = empty('No cities found'); return; }
+    grid.innerHTML = cities.map(w => {
+      const ok = w.suitable_for_spraying;
+      const temp = w.temperature||'—';
+      const windOk = (w.wind_speed||0) < 15;
+      const humOk = (w.humidity||0) < 85;
+      const iconUrl = w.condition_icon ? `https://openweathermap.org/img/wn/${w.condition_icon}@2x.png` : '';
+      return `<div onclick="app.showCityDetail(${JSON.stringify(JSON.stringify(w)).slice(1,-1)})"
+          style="background:var(--surface);border:1px solid ${ok?'rgba(122,182,72,.25)':'rgba(212,90,74,.2)'};border-radius:var(--radius);padding:16px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden"
+          onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 24px rgba(0,0,0,.3)'"
+          onmouseout="this.style.transform='';this.style.boxShadow=''">
+        <div style="position:absolute;top:0;left:0;right:0;height:2px;background:${ok?'#7ab648':'#d45a4a'}"></div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+          <div>
+            <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px">${w.city}</div>
+            <div style="font-size:10px;color:var(--text3);margin-top:1px">${w.source||'Live'}</div>
+          </div>
+          <div style="text-align:right">
+            ${iconUrl ? `<img src="${iconUrl}" style="width:36px;height:36px;margin-bottom:-4px" onerror="this.style.display='none'">` : ''}
+            <div style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:600;color:${temp>35?'#d45a4a':temp<15?'#4a9fd4':'#7ab648'}">${temp}°</div>
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:10px">${w.condition||'—'} · Feels ${w.feels_like||'—'}°C</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px">
+          <div style="text-align:center;padding:5px;background:${humOk?'rgba(122,182,72,.06)':'rgba(212,90,74,.06)'};border-radius:5px">
+            <div style="font-size:13px;font-weight:600;font-family:'JetBrains Mono',monospace;color:${humOk?'#7ab648':'#d45a4a'}">${w.humidity||0}%</div>
+            <div style="font-size:9px;color:var(--text3)">Humidity</div>
+          </div>
+          <div style="text-align:center;padding:5px;background:${windOk?'rgba(122,182,72,.06)':'rgba(212,90,74,.06)'};border-radius:5px">
+            <div style="font-size:13px;font-weight:600;font-family:'JetBrains Mono',monospace;color:${windOk?'#7ab648':'#d45a4a'}">${w.wind_speed||0}</div>
+            <div style="font-size:9px;color:var(--text3)">Wind km/h</div>
+          </div>
+          <div style="text-align:center;padding:5px;background:rgba(255,255,255,.04);border-radius:5px">
+            <div style="font-size:13px;font-weight:600;font-family:'JetBrains Mono',monospace;color:var(--text2)">${w.visibility||0}</div>
+            <div style="font-size:9px;color:var(--text3)">Vis km</div>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;background:${ok?'rgba(122,182,72,.15)':'rgba(212,90,74,.15)'};border:1px solid ${ok?'rgba(122,182,72,.3)':'rgba(212,90,74,.3)'};color:${ok?'#7ab648':'#d45a4a'}">${ok?'✓ Clear to Spray':'✕ Hold Operations'}</span>
+          <span style="font-size:10px;color:var(--text3)">${w.pressure||0} hPa</span>
+        </div>
+      </div>`;
+    }).join('');
+  },
+
+  showCityDetail(wJson) {
+    const w = JSON.parse(wJson);
+    const ok = w.suitable_for_spraying;
+    const modal = document.createElement('div');
+    modal.onclick = ()=>modal.remove();
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:500;display:flex;align-items:center;justify-content:center';
+    const iconUrl = w.condition_icon ? `https://openweathermap.org/img/wn/${w.condition_icon}@2x.png` : '';
+    modal.innerHTML = `<div onclick="event.stopPropagation()" style="background:#1a2012;border:1px solid #2a3520;border-radius:14px;width:420px;padding:24px;box-shadow:0 24px 64px rgba(0,0,0,.6)">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">
+        <div>
+          <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:#e8f0df">${w.city}</div>
+          <div style="font-size:12px;color:#7a9268;margin-top:2px">Tamil Nadu, India · ${w.last_updated||'—'}</div>
+          <div style="font-size:11px;color:#4a6238;margin-top:1px">Source: ${w.source||'—'}</div>
+        </div>
+        <div style="text-align:right">
+          ${iconUrl?`<img src="${iconUrl}" style="width:56px;height:56px" onerror="this.style.display='none'">`:''}
+          <div style="font-family:'JetBrains Mono',monospace;font-size:32px;font-weight:600;color:#e8f0df;line-height:1">${w.temperature||'—'}°C</div>
+          <div style="font-size:11px;color:#7a9268">Feels ${w.feels_like||'—'}°C</div>
+        </div>
+      </div>
+      <div style="font-size:13px;color:#b8c8a8;margin-bottom:16px;text-align:center;padding:8px;background:rgba(255,255,255,.04);border-radius:8px">${w.condition||'—'}</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">
+        ${[
+          {l:'Humidity',v:w.humidity+'%', ok:(w.humidity||0)<85},
+          {l:'Wind',    v:w.wind_speed+' km/h '+w.wind_direction, ok:(w.wind_speed||0)<15},
+          {l:'Visibility',v:w.visibility+' km', ok:(w.visibility||0)>=5},
+          {l:'Pressure', v:w.pressure+' hPa', ok:true},
+          {l:'Wind Gust',v:(w.wind_gust||0)+' km/h', ok:(w.wind_gust||0)<20},
+          {l:'Min/Max',  v:(w.temp_min||w.temperature)+'° / '+(w.temp_max||w.temperature)+'°', ok:true},
+        ].map(x=>`<div style="text-align:center;padding:8px 6px;background:rgba(255,255,255,.04);border-radius:8px;border:1px solid ${x.ok?'rgba(122,182,72,.15)':'rgba(212,90,74,.15)'}">
+          <div style="font-size:13px;font-weight:600;font-family:'JetBrains Mono',monospace;color:${x.ok?'#7ab648':'#d45a4a'}">${x.v}</div>
+          <div style="font-size:10px;color:#7a9268;margin-top:2px">${x.l}</div>
+        </div>`).join('')}
+      </div>
+      <div style="padding:12px;border-radius:10px;background:${ok?'rgba(122,182,72,.08)':'rgba(212,90,74,.08)'};border:1px solid ${ok?'rgba(122,182,72,.2)':'rgba(212,90,74,.2)'};text-align:center;margin-bottom:14px">
+        <div style="font-size:15px;font-weight:700;color:${ok?'#7ab648':'#d45a4a'};margin-bottom:4px">${ok?'✓ Clear to Spray':'✕ Hold Operations'}</div>
+        <div style="font-size:11px;color:#7a9268">${ok?'Wind, humidity and temperature within safe limits':'Check wind speed / humidity before proceeding'}</div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:11px;color:#7a9268;margin-bottom:14px">
+        <div>Best window: <strong style="color:#a8d96e">06:00–09:00</strong></div>
+        <div>Avoid: <strong style="color:#d4a843">12:00–15:00</strong></div>
+        <div>Evening: <strong style="color:#4a9fd4">17:00–19:00</strong></div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button onclick="app.scheduleNewRequest()" style="flex:1;padding:10px;background:rgba(122,182,72,.1);border:1px solid rgba(122,182,72,.3);border-radius:8px;color:#7ab648;font-family:inherit;font-size:12px;cursor:pointer">Schedule Service Here</button>
+        <button onclick="this.closest('.env-modal').remove()" style="padding:10px 14px;background:transparent;border:1px solid #2a3520;border-radius:8px;color:#7a9268;cursor:pointer;font-family:inherit" onclick="modal.remove()">Close</button>
+      </div>
+    </div>`;
+    document.body.appendChild(modal);
+  },
+
+  // ── FLEET — DB DRIVEN ───────────────────────────────────
+  async loadFleet() {
+    const c = document.getElementById('fleet-content');
+    if (!c) return;
+    c.innerHTML = loading();
+    const fleet = await apiFetch('/api/fleet') || {total:0,active:0,maintenance:0,standby:0,drones:[]};
+    const drones = fleet.drones || [];
+    c.innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
+        ${[{v:fleet.total,l:'Total Fleet',c:'#e8f0df'},{v:fleet.active,l:'Active Now',c:'#7ab648'},{v:fleet.maintenance,l:'Maintenance',c:'#d45a4a'},{v:fleet.standby,l:'Standby',c:'#d4a843'}]
+          .map(m=>`<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;position:relative;overflow:hidden"><div style="position:absolute;top:0;left:0;right:0;height:2px;background:${m.c}"></div><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">${m.l}</div><div style="font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:600;color:${m.c}">${m.v}</div></div>`).join('')}
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px">
+        ${drones.map(d=>{
+          const sc={active:'#7ab648',maintenance:'#d45a4a',standby:'#d4a843'}[d.status]||'#7a9268';
+          const bl=d.battery_level||0;
+          const bc=bl>50?'#7ab648':bl>20?'#d4a843':'#d45a4a';
+          return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;transition:all .2s"
+              onmouseover="this.style.transform='translateY(-2px)';this.style.borderColor='${sc}40'"
+              onmouseout="this.style.transform='';this.style.borderColor=''">
+            <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;background:${sc}08">
+              <div>
+                <div style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700">${d.drone_id}</div>
+                <div style="font-size:11px;color:var(--text3)">${d.model}</div>
+              </div>
+              <div style="text-align:right">
+                <span style="font-size:10px;font-weight:700;color:${sc};text-transform:uppercase;background:${sc}15;padding:3px 8px;border-radius:20px;border:1px solid ${sc}30">${d.status}</span>
+                <div style="font-size:10px;color:var(--text3);margin-top:3px">${d.flight_hours_today||0}h today</div>
+              </div>
+            </div>
+            <div style="padding:12px 16px">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px">
+                <div style="font-size:11px"><span style="color:var(--text3)">Pilot: </span><span style="color:var(--text2);font-weight:500">${d.pilot||'—'}</span></div>
+                <div style="font-size:11px"><span style="color:var(--text3)">Location: </span><span style="color:var(--text2)">${d.current_location||'—'}</span></div>
+                <div style="font-size:11px"><span style="color:var(--text3)">Total hrs: </span><span class="mono">${d.total_flight_hours||0}h</span></div>
+                <div style="font-size:11px"><span style="color:var(--text3)">Next maint: </span><span style="color:var(--text2)">${d.next_maintenance ? new Date(d.next_maintenance).toLocaleDateString('en-IN') : '—'}</span></div>
+              </div>
+              ${d.notes?`<div style="font-size:10px;color:var(--text3);background:var(--bg3);border-radius:5px;padding:5px 7px;margin-bottom:8px">${d.notes}</div>`:''}
+              <div style="margin-bottom:5px;font-size:10px;color:var(--text3);display:flex;justify-content:space-between"><span>Battery</span><span class="mono">${bl}%</span></div>
+              <div style="height:5px;background:var(--bg3);border-radius:3px;overflow:hidden;margin-bottom:10px">
+                <div style="height:100%;width:${bl}%;background:${bc};border-radius:3px;transition:width .6s ease"></div>
+              </div>
+              <div style="display:flex;gap:6px">
+                <select onchange="app.updateDroneStatus(${d.id},this.value)" style="flex:1;padding:5px 8px;background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--text2);font-family:inherit;font-size:11px;cursor:pointer;outline:none">
+                  <option value="">Update status…</option>
+                  <option value="active">→ Active</option>
+                  <option value="standby">→ Standby</option>
+                  <option value="maintenance">→ Maintenance</option>
+                </select>
+                <button onclick="app.editDrone(${d.id},'${d.drone_id}')" style="padding:5px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--text2);cursor:pointer;font-family:inherit;font-size:11px">Edit</button>
+              </div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>`;
+  },
+
+  async updateDroneStatus(id, status) {
+    if (!status) return;
+    const r = await fetch(API+'/api/fleet/'+id+'/update', {
+      method:'PUT', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({status})
+    });
+    if (r.ok) { this.toast('Drone status updated → '+status); this.load('fleet'); }
+    else this.toast('Update failed', false);
+  },
+
+  editDrone(id, name) {
+    const loc = prompt(`${name} — Current location:`);
+    const batt = prompt(`${name} — Battery level (0-100):`);
+    const hrs = prompt(`${name} — Flight hours today:`);
+    if (!loc && !batt && !hrs) return;
+    const body = {};
+    if (loc) body.current_location = loc;
+    if (batt) body.battery_level = parseInt(batt);
+    if (hrs) body.flight_hours_today = parseFloat(hrs);
+    fetch(API+'/api/fleet/'+id+'/update', {
+      method:'PUT', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(body)
+    }).then(r=>{ if(r.ok){this.toast('Drone updated');this.load('fleet');}else this.toast('Update failed',false); });
+  },
+
+  // ── ANALYTICS — DB DRIVEN ───────────────────────────────
+  async loadAnalytics() {
+    const c = document.getElementById('analytics-content');
+    if (!c) return;
+    c.innerHTML = loading();
+    const [metrics, stats] = await Promise.all([
+      apiFetch('/api/analytics'),
+      apiFetch('/api/stats')
+    ]);
+    const m = metrics||{by_type:{},by_status:{},monthly_revenue:{},total_revenue:0,total_requests:0};
+    const s = stats||{};
+    const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const revData = months.map(mo=>({m:mo, v:m.monthly_revenue[mo]||0}));
+    const maxRev = Math.max(...revData.map(x=>x.v), 1);
+    const totalByType = Object.values(m.by_type).reduce((a,b)=>a+b,0)||1;
+    c.innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
+        ${[{v:'Rs.'+num(m.total_revenue||0),l:'Total Revenue',c:'#d4a843'},{v:m.total_requests||m.total_bookings||0,l:'Total Requests',c:'#7ab648'},{v:s.active_requests||0,l:'Active',c:'#4a9fd4'},{v:(s.efficiency_rate||95.8)+'%',l:'Efficiency',c:'#a8d96e'}]
+          .map(x=>`<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;position:relative;overflow:hidden"><div style="position:absolute;top:0;left:0;right:0;height:2px;background:${x.c}"></div><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">${x.l}</div><div style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:600;color:${x.c}">${x.v}</div></div>`).join('')}
+      </div>
+      <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:16px">
+        <!-- Monthly Revenue -->
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px">
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px;margin-bottom:16px">Monthly Revenue</div>
+          <div style="display:flex;align-items:flex-end;gap:5px;height:120px">
+            ${revData.map(x=>`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
+              <div title="Rs.${num(x.v)}" style="height:${Math.max(Math.round(x.v/maxRev*100),3)}%;background:linear-gradient(180deg,#7ab648,#5a9632);border-radius:3px 3px 0 0;width:100%;min-height:4px;transition:height .6s"></div>
+              <div style="font-size:9px;color:var(--text3)">${x.m}</div>
+            </div>`).join('')}
+          </div>
+        </div>
+        <!-- Service Mix -->
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px">
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px;margin-bottom:14px">Service Mix</div>
+          ${Object.keys(m.by_type).length ? Object.entries(m.by_type).map(([t,cnt])=>{
+            const pct=Math.round(cnt/totalByType*100);
+            const col=SVC_COLORS[t]||'#5a6238';
+            return `<div style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px"><span style="color:var(--text2)">${svc(t)}</span><span class="mono" style="color:var(--text3)">${pct}%</span></div>
+              <div style="height:5px;background:var(--bg3);border-radius:3px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${col};border-radius:3px;transition:width .8s"></div></div>
+            </div>`;
+          }).join('') : empty('No data yet')}
+        </div>
+        <!-- Status breakdown -->
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px">
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px;margin-bottom:14px">By Status</div>
+          ${Object.entries(m.by_status).map(([s,cnt])=>{
+            const c2=STATUS_COLORS[s]||'#7a9268';
+            return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">
+              <span style="font-size:11px;color:var(--text2);text-transform:capitalize">${s.replace('_',' ')}</span>
+              <span style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;color:${c2}">${cnt}</span>
+            </div>`;
+          }).join('') || empty('No data')}
+        </div>
+      </div>`;
+  },
+
+  // ── COMMUNICATIONS ──────────────────────────────────────
+  async loadComms() {
+    const c = document.getElementById('communications-content');
+    if (!c) return;
+    c.innerHTML = loading();
+    const [convos, wstats] = await Promise.all([
+      apiFetch('/api/conversations'),
+      apiFetch('/api/stats')
+    ]);
+    const ws=wstats||{};
+    const cv=convos||[];
+    c.innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
+        ${[{v:ws.total_farmers||ws.total_customers||0,l:'Farmers',c:'#4a9fd4'},{v:ws.bookings_today||ws.messages_today||0,l:'Messages Today',c:'#7ab648'},{v:ws.bookings_today||ws.orders_today||0,l:'Orders Today',c:'#d4a843'},{v:ws.avg_response_time||'<1s',l:'Response',c:'#a8d96e'}]
+          .map(x=>`<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;position:relative;overflow:hidden"><div style="position:absolute;top:0;left:0;right:0;height:2px;background:${x.c}"></div><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">${x.l}</div><div style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:600;color:${x.c}">${x.v}</div></div>`).join('')}
+      </div>
+      <!-- WA FLOW -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:16px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <div><div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px">WhatsApp Order Flow</div><div style="font-size:11px;color:var(--text3);margin-top:1px">Farmers reply with numbers — no free text needed</div></div>
+          <div style="display:flex;gap:8px">
+            <a href="https://wa.me/918148513157?text=Hi" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:#1a2f1a;border:1px solid rgba(37,211,102,.4);border-radius:8px;text-decoration:none;font-size:12px;font-weight:600;color:#25D366">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+              Open WhatsApp
+            </a>
+            <button onclick="app.testWA()" class="btn btn-ghost btn-sm">Send Test</button>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+          ${[
+            {n:'1',t:'Welcome',m:'Welcome to AgroDrone!\n\n1 - Place Order\n2 - Track Order\n3 - Pricing\n4 - Agent',c:'#4a9fd4'},
+            {n:'2',t:'Pick Service',m:'1 - Pesticide Spray\n2 - Crop Monitoring\n3 - Field Mapping\n4 - Soil Analysis\n0 - Back',c:'#7ab648'},
+            {n:'3',t:'Area & District',m:'Enter hectares: 5\n\n1-Coimbatore\n2-Salem 3-Erode\n4-Madurai 5-Other',c:'#d4a843'},
+            {n:'4',t:'Pick Date',m:'1 - Tomorrow\n2 - In 2 days\n3 - In 3 days\n4 - In 4 days\n5 - Next week',c:'#7a5e2a'},
+            {n:'5',t:'Confirm',m:'ORDER SUMMARY\nService · Area\nLocation · Date\nCost: Rs.6,000\n\nYES / NO',c:'#7a2a5e'},
+            {n:'6',t:'Confirmed → DB',m:'Order #AGR001\nConfirmed & saved!\nTeam calls within\n2 hours. Thank you!',c:'#7ab648'},
+          ].map(s=>`<div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius2);overflow:hidden">
+            <div style="padding:8px 12px;background:${s.c}12;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:7px">
+              <div style="width:18px;height:18px;border-radius:50%;background:${s.c};color:#0a0d08;font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">${s.n}</div>
+              <span style="font-size:11px;font-weight:700;color:var(--text)">${s.t}</span>
+            </div>
+            <pre style="padding:10px 12px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text3);white-space:pre-wrap;margin:0;line-height:1.6">${s.m}</pre>
+          </div>`).join('')}
+        </div>
+        <div style="margin-top:12px;padding:10px 14px;background:rgba(74,159,212,.06);border:1px solid rgba(74,159,212,.15);border-radius:8px;font-size:11px;color:var(--text2)">
+          <strong style="color:#4a9fd4">Webhook:</strong> ${window.location.origin}/api/v1/whatsapp/webhook — set this in Twilio console
+        </div>
+      </div>
+      <!-- CONVERSATIONS -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">
+        <div style="padding:12px 16px;border-bottom:1px solid var(--border)"><div style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px">Recent Conversations (${cv.length})</div></div>
+        ${cv.length ? cv.map(conv=>`<div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-start">
+          <div>
+            <div style="font-size:13px;font-weight:600;color:var(--text)">${conv.name||conv.phone}</div>
+            <div style="font-size:11px;color:var(--text3);margin:2px 0">"${conv.last_message||'—'}"</div>
+            <div style="font-size:10px;color:var(--text4)">Orders: ${conv.total_orders||0} · ${money(conv.total_value||0)}</div>
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            ${chip(conv.status==='new_customer'?'pending':conv.status||'active')}
+            <a href="https://wa.me/${(conv.phone||'').replace(/[^0-9]/g,'')}" target="_blank" style="display:block;margin-top:5px;font-size:10px;color:#25D366;text-decoration:none">💬 Reply</a>
+          </div>
+        </div>`).join('') : '<div style="padding:24px;text-align:center;color:var(--text3);font-size:13px">No conversations yet</div>'}
+      </div>`;
+  },
+
+  async testWA() {
+    const r = await fetch(API+'/api/v1/whatsapp/webhook',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone_number:'+919876543210',message_text:'Hi',message_id:'test_'+Date.now(),timestamp:new Date().toISOString()})});
+    this.toast(r.ok ? 'Test sent — bot will reply with welcome menu' : 'Send failed', r.ok);
+  },
+
+  // ── SETTINGS ────────────────────────────────────────────
+  loadSettings() {
+    const c = document.getElementById('settings-content');
+    if (!c) return;
+    c.innerHTML = `<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px">
+        <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px;margin-bottom:14px">API Configuration</div>
+        <label style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:5px">Backend URL</label>
+        <input id="set-url" value="${API||window.location.origin}" style="width:100%;padding:9px 11px;background:var(--bg3);border:1px solid var(--border2);border-radius:7px;color:var(--text);font-family:inherit;font-size:13px;outline:none;margin-bottom:12px">
+        <div style="display:flex;gap:8px">
+          <button onclick="app.saveSettings()" class="btn btn-primary btn-sm">Save</button>
+          <button onclick="app.resetSettings()" class="btn btn-ghost btn-sm">Reset</button>
+        </div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px">
+        <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px;margin-bottom:14px">Data Export</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <button onclick="app.generateReport()" class="btn btn-ghost btn-sm">↓ Operations Report (.txt)</button>
+          <button onclick="app.exportCSV()" class="btn btn-ghost btn-sm">↓ Export Requests (.csv)</button>
+        </div>
+      </div>
+    </div>`;
+  },
+
+  saveSettings() {
+    const u = document.getElementById('set-url')?.value;
+    if (u) { localStorage.setItem('api-url', u); this.toast('Saved — reload to apply'); }
+  },
+  resetSettings() {
+    localStorage.removeItem('api-url');
+    this.toast('Reset to default');
+  },
+
+  // ── ACTIONS ─────────────────────────────────────────────
+  async updateStatus(id) {
+    const s = prompt('Status:\npending / scheduled / in_progress / completed / cancelled');
+    if (!s) return;
+    const r = await fetch(API+'/api/requests/'+id+'/status',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:s})});
+    if (r.ok){this.toast('Status → '+s);this.load(this.current);}
+    else this.toast('Failed',false);
+  },
+
+  showScheduleModal(prefillDate='', prefillName='', prefillSvc='', prefillArea='', prefillLoc='', existingId=null) {
+    const todayStr = new Date().toISOString().slice(0,10);
+    const wrap = document.createElement('div');
+    wrap.id = 'sched-modal-wrap';
+    wrap.onclick = ()=>wrap.remove();
+    wrap.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:500;display:flex;align-items:center;justify-content:center';
+    wrap.innerHTML = `<div onclick="event.stopPropagation()" style="background:#1a2012;border:1px solid #2a3520;border-radius:14px;width:480px;max-height:92vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.6);padding:0">
+      <div style="padding:18px 22px;border-bottom:1px solid #2a3520;display:flex;justify-content:space-between;align-items:center">
+        <div><div style="font-family:'Syne',sans-serif;font-weight:700;font-size:16px;color:#e8f0df">${existingId?'Schedule Request #'+existingId:'New Service Request'}</div>
+        <div style="font-size:11px;color:#7a9268;margin-top:2px">${existingId?'Pick a date and time slot':'Fill details and pick a date'}</div></div>
+        <button onclick="document.getElementById('sched-modal-wrap').remove()" style="background:none;border:none;color:#7a9268;font-size:20px;cursor:pointer;line-height:1">✕</button>
+      </div>
+      <div style="padding:20px 22px">
+        ${!existingId ? `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+          <div><label style="font-size:10px;font-weight:700;color:#7a9268;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:5px">Farmer Name</label>
+          <input id="m-name" value="${prefillName}" placeholder="Raj Kumar" style="width:100%;padding:9px 11px;background:#111509;border:1px solid #2a3520;border-radius:7px;color:#e8f0df;font-family:inherit;font-size:13px;outline:none"></div>
+          <div><label style="font-size:10px;font-weight:700;color:#7a9268;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:5px">Phone</label>
+          <input id="m-phone" placeholder="+91 98765 43210" style="width:100%;padding:9px 11px;background:#111509;border:1px solid #2a3520;border-radius:7px;color:#e8f0df;font-family:inherit;font-size:13px;outline:none"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+          <div><label style="font-size:10px;font-weight:700;color:#7a9268;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:5px">Service Type</label>
+          <select id="m-stype" style="width:100%;padding:9px 11px;background:#111509;border:1px solid #2a3520;border-radius:7px;color:#e8f0df;font-family:inherit;font-size:13px;outline:none;cursor:pointer">
+            <option value="pesticide_spray">Pesticide Spray</option>
+            <option value="crop_monitoring">Crop Monitoring</option>
+            <option value="field_mapping">Field Mapping</option>
+            <option value="soil_analysis">Soil Analysis</option>
+            <option value="fertilizer_spray">Fertilizer Spray</option>
+          </select></div>
+          <div><label style="font-size:10px;font-weight:700;color:#7a9268;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:5px">Area (hectares)</label>
+          <input id="m-area" type="number" value="${prefillArea}" placeholder="5" min="0.5" step="0.5" style="width:100%;padding:9px 11px;background:#111509;border:1px solid #2a3520;border-radius:7px;color:#e8f0df;font-family:inherit;font-size:13px;outline:none"></div>
+        </div>
+        <div style="margin-bottom:12px"><label style="font-size:10px;font-weight:700;color:#7a9268;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:5px">Location / District</label>
+        <input id="m-loc" value="${prefillLoc}" placeholder="Coimbatore, Perur Village" style="width:100%;padding:9px 11px;background:#111509;border:1px solid #2a3520;border-radius:7px;color:#e8f0df;font-family:inherit;font-size:13px;outline:none"></div>
+        ` : ''}
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+          <div><label style="font-size:10px;font-weight:700;color:#7a9268;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:5px">Service Date</label>
+          <input id="m-date" type="date" value="${prefillDate||todayStr}" min="${todayStr}" style="width:100%;padding:9px 11px;background:#111509;border:1px solid #2a3520;border-radius:7px;color:#e8f0df;font-family:inherit;font-size:13px;outline:none;cursor:pointer"></div>
+          <div><label style="font-size:10px;font-weight:700;color:#7a9268;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:5px">Time Slot</label>
+          <select id="m-slot" style="width:100%;padding:9px 11px;background:#111509;border:1px solid #2a3520;border-radius:7px;color:#e8f0df;font-family:inherit;font-size:13px;outline:none;cursor:pointer">
+            <option value="06:00-09:00">06:00–09:00 Morning ✦ Best</option>
+            <option value="09:00-12:00">09:00–12:00 Late Morning</option>
+            <option value="12:00-15:00">12:00–15:00 Midday</option>
+            <option value="15:00-18:00">15:00–18:00 Afternoon</option>
+          </select></div>
+        </div>
+        <div style="background:rgba(122,182,72,.06);border:1px solid rgba(122,182,72,.15);border-radius:7px;padding:10px 12px;margin-bottom:14px;font-size:11px;color:#b8c8a8">
+          Best window: <strong style="color:#7ab648">06:00–09:00</strong> (low wind, cool temperature)
+        </div>
+        <div style="display:flex;gap:10px">
+          <button onclick="app.submitModal(${existingId})" style="flex:1;padding:11px;background:#7ab648;color:#0a1208;font-family:'Syne',sans-serif;font-weight:700;font-size:14px;border:none;border-radius:8px;cursor:pointer">${existingId?'Confirm Schedule':'Create & Schedule'}</button>
+          <button onclick="document.getElementById('sched-modal-wrap').remove()" style="padding:11px 16px;background:transparent;border:1px solid #2a3520;border-radius:8px;color:#7a9268;cursor:pointer;font-family:inherit">Cancel</button>
+        </div>
+      </div>
+    </div>`;
+    document.body.appendChild(wrap);
+  },
+
+  scheduleNewRequest() { this.showScheduleModal(); },
+  newRequest() { this.showScheduleModal(); },
+  scheduleExisting(id, name, svc2, area, loc) { this.showScheduleModal('', name, svc2, area, loc, id); },
+
+  async submitModal(existingId) {
+    const date = document.getElementById('m-date')?.value;
+    const slot = document.getElementById('m-slot')?.value;
+    if (!date) { this.toast('Select a date', false); return; }
+
+    if (existingId) {
+      const r = await fetch(API+'/api/requests/'+existingId+'/schedule',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({scheduled_date:date,time_slot:slot})});
+      if (r.ok){document.getElementById('sched-modal-wrap')?.remove();this.toast('Scheduled → '+new Date(date).toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short'})+' · '+slot);this.load(this.current);}
+      else this.toast('Failed',false);
+    } else {
+      const name=document.getElementById('m-name')?.value?.trim();
+      const phone=document.getElementById('m-phone')?.value?.trim();
+      const stype=document.getElementById('m-stype')?.value;
+      const area=parseFloat(document.getElementById('m-area')?.value);
+      const loc=document.getElementById('m-loc')?.value?.trim();
+      if(!name||!phone||!area||!loc){this.toast('Fill all fields',false);return;}
+      const r = await fetch(API+'/api/requests/new',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({farmer_name:name,phone,service_type:stype,area_hectares:area,location:loc,scheduled_date:date,time_slot:slot})});
+      const d = await r.json();
+      if(r.ok){document.getElementById('sched-modal-wrap')?.remove();this.toast('Request #'+d.request_id+' scheduled → '+new Date(date).toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short'}));this.load(this.current);}
+      else this.toast(d.detail||'Error',false);
+    }
+  },
+
+  async generateReport() {
+    const s = await apiFetch('/api/stats')||{};
+    const txt=`AgroDrone Report\n${new Date().toLocaleString('en-IN')}\n${'─'.repeat(40)}\nServices: ${s.total_bookings||s.total_services||0}\nActive: ${s.active_requests||0}\nHours: ${s.operational_hours||0}\nRevenue: Rs.${num(s.total_revenue||0)}\n`;
+    const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type:'text/plain'}));a.download='agrodrone-report-'+Date.now()+'.txt';a.click();
+    this.toast('Report downloaded');
+  },
+
+  async exportCSV() {
+    const d=await apiFetch('/api/requests?limit=1000')||[];
+    const csv='ID,Farmer,Phone,Service,Area,Location,Status,Scheduled,Cost,Source\n'+d.map(r=>[r.id,r.farmer_name,r.phone,r.service_type,r.area_hectares,r.location,r.status,r.scheduled_date||'',r.estimated_cost,r.source].join(',')).join('\n');
+    const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='requests-'+Date.now()+'.csv';a.click();
+    this.toast('CSV exported');
+  },
+
+  async loadCalendar() {
+    const c = document.getElementById('calendar-content');
+    if (!c) return;
+    c.innerHTML = '<div class="spinner-wrap"><div class="spinner"></div>Loading calendar…</div>';
+
+    // Load FullCalendar on first use
+    if (!window.FullCalendar) {
+      await new Promise((res, rej) => {
+        const lnk = document.createElement('link');
+        lnk.rel = 'stylesheet';
+        lnk.href = 'https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/6.1.10/index.global.min.css';
+        document.head.appendChild(lnk);
+        const scr = document.createElement('script');
+        scr.src = 'https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/6.1.10/index.global.min.js';
+        scr.onload = res; scr.onerror = rej;
+        document.head.appendChild(scr);
+      });
+    }
+
+    const now = new Date();
+    const events = await apiFetch('/api/calendar?year='+now.getFullYear()+'&month='+(now.getMonth()+1)) || [];
+
+    c.innerHTML = `
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:20px">
+        <div style="padding:14px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px">Service Calendar</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:1px">All scheduled drone operations — click any event for details</div>
+          </div>
+          <div style="display:flex;gap:6px">
+            <span style="font-size:11px;padding:3px 10px;background:rgba(74,159,212,.12);border-radius:20px;color:#4a9fd4;border:1px solid rgba(74,159,212,.2)">📅 Scheduled</span>
+            <span style="font-size:11px;padding:3px 10px;background:rgba(232,160,64,.12);border-radius:20px;color:#e8a040;border:1px solid rgba(232,160,64,.2)">🚁 In Progress</span>
+            <span style="font-size:11px;padding:3px 10px;background:rgba(122,182,72,.12);border-radius:20px;color:#7ab648;border:1px solid rgba(122,182,72,.2)">✅ Completed</span>
+          </div>
+        </div>
+        <div style="padding:16px">
+          <div id="fc-root" style="--fc-bg:var(--surface);--fc-border-color:var(--border);--fc-neutral-bg:var(--bg3);--fc-today-bg-color:rgba(122,182,72,.07);--fc-event-border-color:transparent;--fc-page-bg-color:var(--surface);--fc-neutral-text-color:var(--text);--fc-list-event-hover-bg-color:var(--surface2)"></div>
+        </div>
+      </div>`;
+
+    // Inject dark-mode calendar CSS override
+    if (!document.getElementById('fc-dark-style')) {
+      const st = document.createElement('style');
+      st.id = 'fc-dark-style';
+      st.textContent = `
+        .fc { color: var(--text); font-family: 'DM Sans', sans-serif; }
+        .fc .fc-toolbar-title { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; color: var(--text); }
+        .fc .fc-button { background: var(--surface2); border: 1px solid var(--border2); color: var(--text2); font-size: 12px; padding: 5px 12px; }
+        .fc .fc-button:hover { background: var(--bg3); color: var(--text); }
+        .fc .fc-button-primary:not(:disabled).fc-button-active { background: var(--green); border-color: var(--green); color: #0a1208; }
+        .fc th { background: var(--bg3); color: var(--text3); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; border-color: var(--border); }
+        .fc td { border-color: var(--border); }
+        .fc .fc-daygrid-day { background: transparent; }
+        .fc .fc-daygrid-day:hover { background: var(--surface2); }
+        .fc .fc-day-today { background: rgba(122,182,72,.06) !important; }
+        .fc .fc-daygrid-day-number { color: var(--text2); font-size: 12px; }
+        .fc .fc-day-today .fc-daygrid-day-number { color: var(--green2); font-weight: 700; }
+        .fc .fc-event { border-radius: 4px; font-size: 11px; font-weight: 600; padding: 1px 4px; cursor: pointer; }
+        .fc .fc-list-day-cushion { background: var(--bg3); }
+        .fc .fc-list-event:hover td { background: var(--surface2); }
+        .fc .fc-list-event-title a { color: var(--text); }
+        .fc .fc-col-header-cell { padding: 8px 0; }
+      `;
+      document.head.appendChild(st);
+    }
+
+    const cal = new FullCalendar.Calendar(document.getElementById('fc-root'), {
+      initialView: 'dayGridMonth',
+      headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,listMonth' },
+      height: 'auto',
+      events: events.map(e => ({
+        id: e.id, title: e.title, start: e.start, end: e.end,
+        backgroundColor: e.color, borderColor: 'transparent',
+        extendedProps: e
+      })),
+      eventClick: function(info) {
+        const p = info.event.extendedProps;
+        const id = String(info.event.id).padStart(4,'0');
+        var msg = 'Booking #AGR' + id + '\n' +
+          'Farmer: ' + (p.farmer||'') + '  Phone: ' + (p.phone||'') + '\n' +
+          'Service: ' + (p.service||'') + '\n' +
+          'Area: ' + (p.area||0) + ' ha' + '\n' +
+          'Location: ' + (p.location||'') + '\n' +
+          'Cost: Rs.' + Number(p.cost||0).toLocaleString('en-IN') + '\n' +
+          'Pilot: ' + (p.pilot||'Unassigned') + '\n' +
+          'Status: ' + (p.status||'').replace(/_/g,' ');
+        alert(msg);
+      }
+    });
+    cal.render();
+  }
+
+};
+
+document.addEventListener('DOMContentLoaded', ()=>app.init());
+</script>
+</html>

@@ -1,0 +1,5 @@
+{
+  "name": "Peace Haven",
+  "description": "Smart agricultural drone spraying service for healthier farms.",
+  "requestFramePermissions": ["geolocation"]
+}

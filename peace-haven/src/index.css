@@ -1,0 +1,78 @@
+@import url('https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700;800;900&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Figtree", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Figtree", sans-serif;
+  --font-serif: "Libre Baskerville", serif;
+
+  --color-brand-primary: #000000;
+  --color-brand-accent: #2D5A27;
+  --color-brand-pink: #8B4513; /* SaddleBrown as a warm earthy accent instead of pink */
+  
+  --radius-xl: 0.5rem;
+  --radius-2xl: 1rem;
+
+  @keyframes marquee {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+  --animate-marquee: marquee 20s linear infinite;
+}
+
+@layer base {
+  html {
+    font-size: 85%; /* Scaled down from 100% to make everything ~15-20% smaller */
+  }
+  body {
+    @apply bg-white text-black antialiased selection:bg-black selection:text-white;
+    font-family: var(--font-sans);
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-extrabold tracking-tight;
+    font-family: var(--font-display);
+  }
+}
+
+@layer utilities {
+  .text-italics {
+    font-family: var(--font-serif);
+    @apply italic font-normal;
+  }
+  .grid-line-x {
+    @apply border-t border-black/5;
+  }
+  
+  .grid-line-y {
+    @apply border-l border-black/5;
+  }
+
+  .dj-card {
+    @apply bg-white border border-black/10 p-6 transition-all hover:-translate-y-1 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)];
+  }
+
+  .dj-button-filled {
+    @apply bg-black text-white px-6 py-3 font-bold uppercase tracking-widest text-xs transition-all hover:bg-brand-accent active:translate-y-1;
+  }
+
+  .dj-button-outline {
+    @apply border-2 border-black bg-white text-black px-6 py-3 font-bold uppercase tracking-widest text-xs transition-all hover:bg-black hover:text-white active:translate-y-1;
+  }
+
+  .marquee-container {
+    @apply overflow-hidden whitespace-nowrap flex;
+  }
+
+  .marquee-content {
+    @apply flex animate-marquee;
+  }
+
+
+  .bg-grid {
+    background-image: 
+      linear-gradient(to right, rgba(0,0,0,0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(0,0,0,0.05) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+}
