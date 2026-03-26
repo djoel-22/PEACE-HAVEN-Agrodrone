@@ -16,11 +16,11 @@ export default defineConfig(({mode}) => {
       },
     },
     build: {
-      outDir: '../app/static/dist',
+      // Changed from '../app/static/dist' — Vercel serves from 'dist' in the root of peace-haven
+      outDir: 'dist',
       emptyOutDir: true,
     },
     server: {
-      // HMR is disabled in AI Studio via DISABLE_HMR env var.
       hmr: process.env.DISABLE_HMR !== 'true',
       proxy: {
         '/api': {
