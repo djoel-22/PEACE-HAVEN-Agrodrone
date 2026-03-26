@@ -8,8 +8,7 @@ import {
   type BackendTracking, type BackendAvailableDrone,
 } from '../lib/api';
 import { mapOrder, mapDrone, mapAvailableDrone, mapWeather, type MappedWeather } from '../lib/mappers';
-import { MOCK_ORDERS, MOCK_DRONES, MOCK_WEATHER } from '../mockData';
-import type { Order, Drone, WeatherData } from '../types';
+import type { Order, Drone } from '../types';
 
 // ─── Generic async hook ───────────────────────────────────────────────────────
 function useAsync<T>(fn: () => Promise<T>, fallback: T, deps: unknown[] = []) {
@@ -22,12 +21,12 @@ function useAsync<T>(fn: () => Promise<T>, fallback: T, deps: unknown[] = []) {
     setLoading(true);
     setError(null);
     fn()
-      .then(result => { if (!cancelled) setData(result); })
+      .then(result => { if (!cancelled) { setData(result); } })
       .catch((e: Error) => {
         if (!cancelled) {
-          console.warn('[useApi] API error, using fallback:', e.message);
+          console.warn('[useApi] API error:', e.message);
           setError(e.message);
-          setData(fallback);
+          // Keep fallback (empty/null) — do NOT fall back to mock data
         }
       })
       .finally(() => { if (!cancelled) setLoading(false); });
@@ -45,27 +44,26 @@ export function useStats() {
 }
 export const useDashboardStats = useStats;
 
-// ─── Orders — /api/requests returns a plain array ─────────────────────────────
+// ─── Orders ───────────────────────────────────────────────────────────────────
 export function useOrders() {
   return useAsync<Order[]>(
     async () => {
       const res = await fetchOrders();
-      // res is BackendOrder[] (plain array)
       const list = Array.isArray(res) ? res : (res as any).requests ?? [];
       return list.map((r: BackendOrder) => mapOrder(r));
     },
-    MOCK_ORDERS
+    []   // empty — no mock fallback
   );
 }
 
-// ─── Admin orders (tracking endpoint) ────────────────────────────────────────
+// ─── Admin orders ─────────────────────────────────────────────────────────────
 export function useAdminOrders(status?: string) {
   return useAsync<Order[]>(
     async () => {
       const res = await fetchAdminAllOrders(status);
       return (res.orders ?? []).map((r: BackendTracking) => mapOrder(r));
     },
-    MOCK_ORDERS,
+    [],
     [status]
   );
 }
@@ -82,27 +80,31 @@ export function useDrones() {
         mapDrone(d, batteryMap[d.drone_id])
       );
     },
-    MOCK_DRONES
+    []
   );
 }
 
 // ─── Weather (single city) ────────────────────────────────────────────────────
-const WEATHER_FALLBACK: MappedWeather = {
-  ...MOCK_WEATHER,
+const WEATHER_EMPTY: MappedWeather = {
   city: 'Chennai',
-  condition: 'Clear Sky',
-  wind_direction: 'N',
-  feels_like: MOCK_WEATHER.temp,
-  visibility: 10,
-  pressure: 1012,
+  temp: 0,
+  humidity: 0,
+  windSpeed: 0,
+  rainChance: 0,
+  suitability: 'Safe',
+  condition: '--',
+  wind_direction: '--',
+  feels_like: 0,
+  visibility: 0,
+  pressure: 0,
   suitable_for_spraying: true,
-  last_updated: 'Live data unavailable',
+  last_updated: '',
 };
 
 export function useWeather(city = 'Chennai') {
   return useAsync<MappedWeather>(
     async () => mapWeather(await fetchWeather(city)),
-    { ...WEATHER_FALLBACK, city },
+    { ...WEATHER_EMPTY, city },
     [city]
   );
 }
@@ -134,7 +136,7 @@ export function useScheduledJobs() {
   );
 }
 
-// ─── Pending orders — backend returns {orders:[...]} ─────────────────────────
+// ─── Pending orders ───────────────────────────────────────────────────────────
 export function usePendingOrders() {
   return useAsync<Order[]>(
     async () => {
@@ -142,11 +144,11 @@ export function usePendingOrders() {
       const list = (res as any).orders ?? (Array.isArray(res) ? res : []);
       return list.map((r: BackendTracking) => mapOrder(r));
     },
-    MOCK_ORDERS.filter(o => o.status === 'Placed')
+    []
   );
 }
 
-// ─── Available drones — backend returns {drones:[...]} ───────────────────────
+// ─── Available drones ─────────────────────────────────────────────────────────
 export function useAvailableDrones() {
   return useAsync<(Drone & { pilot_name: string; is_available: boolean })[]>(
     async () => {
@@ -162,7 +164,7 @@ export function useAvailableDrones() {
   );
 }
 
-// ─── Track by booking ID ─────────────────────────────────────────────────────
+// ─── Track by booking ID ──────────────────────────────────────────────────────
 export function useTrackOrder(bookingId: string) {
   return useAsync<Order | null>(
     async () => {
@@ -174,5 +176,5 @@ export function useTrackOrder(bookingId: string) {
   );
 }
 
-// ─── Re-export imperative helpers ────────────────────────────────────────────
+// ─── Re-export imperative helpers ─────────────────────────────────────────────
 export { updateOrderStatus };
