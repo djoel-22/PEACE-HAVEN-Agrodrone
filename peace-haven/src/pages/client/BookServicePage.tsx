@@ -283,7 +283,37 @@ export const BookServicePage = () => {
 
   // ── Booking Form ────────────────────────────────────────────────────────────
   return (
-    <div className="w-full bg-white bg-grid min-h-screen relative">
+    <div className="w-full bg-white bg-grid min-h-screen relative overflow-hidden">
+      {/* Video Background */}
+      <div className="absolute inset-0 z-0 pointer-events-none bg-zinc-100 flex items-center justify-center overflow-hidden">
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="absolute inset-0 w-full h-full object-cover grayscale opacity-30"
+          onError={(e) => {
+            e.currentTarget.style.display = 'none';
+            const fallback = document.getElementById('booking-video-fallback');
+            if (fallback) fallback.style.display = 'flex';
+          }}
+        >
+          <source src="/booking-video.mp4" type="video/mp4" />
+        </video>
+        
+        {/* Fallback UI when video is missing */}
+        <div id="booking-video-fallback" style={{ display: 'none' }} className="absolute inset-0 flex-col items-center justify-center text-zinc-400 opacity-60 z-0">
+          <CheckCircle2 size={64} className="mb-4 animate-bounce" />
+          <p className="font-black uppercase tracking-widest text-sm text-center px-4">
+            Video not found.<br/>
+            Please upload your video to the <code className="bg-zinc-200 px-1 rounded text-black">/public</code> folder<br/>
+            and name it <code className="bg-zinc-200 px-1 rounded text-black">booking-video.mp4</code>
+          </p>
+        </div>
+
+        <div className="absolute inset-0 bg-gradient-to-b from-white/40 via-transparent to-white z-10" />
+      </div>
+
       <div className="max-w-6xl mx-auto px-5 py-16 relative z-10">
 
         {/* Header */}

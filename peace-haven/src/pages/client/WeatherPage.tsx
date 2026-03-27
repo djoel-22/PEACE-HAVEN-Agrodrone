@@ -44,7 +44,39 @@ export const WeatherPage = () => {
   const suitability = getSuitabilityInfo(weather.suitable_for_spraying, weather.windSpeed);
 
   return (
-    <div className="relative min-h-screen bg-white bg-grid">
+    <div className="relative min-h-screen bg-white bg-grid overflow-hidden">
+
+      {/* ================= VIDEO BACKGROUND (FROM FILE 1) ================= */}
+      <div className="absolute inset-0 z-0 pointer-events-none bg-zinc-100 flex items-center justify-center overflow-hidden">
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="absolute inset-0 w-full h-full object-cover grayscale opacity-30"
+          onError={(e) => {
+            e.currentTarget.style.display = 'none';
+            const fallback = document.getElementById('weather-video-fallback');
+            if (fallback) fallback.style.display = 'flex';
+          }}
+        >
+          <source src="/weather-video.mp4" type="video/mp4" />
+        </video>
+        
+        {/* Fallback UI */}
+        <div id="weather-video-fallback" style={{ display: 'none' }} className="absolute inset-0 flex-col items-center justify-center text-zinc-400 opacity-60 z-0">
+          <CloudSun size={64} className="mb-4 animate-bounce" />
+          <p className="font-black uppercase tracking-widest text-sm text-center px-4">
+            Video not found.<br/>
+            Please upload your video to the <code className="bg-zinc-200 px-1 rounded text-black">/public</code> folder<br/>
+            and name it <code className="bg-zinc-200 px-1 rounded text-black">weather-video.mp4</code>
+          </p>
+        </div>
+
+        <div className="absolute inset-0 bg-gradient-to-b from-white/40 via-transparent to-white z-10" />
+      </div>
+
+      {/* ================= MAIN CONTENT ================= */}
       <div className="max-w-6xl mx-auto px-5 py-16 relative z-10">
 
         {/* Header */}
@@ -203,23 +235,25 @@ export const WeatherPage = () => {
           )}
         </div>
 
-        {/* Warning banner */}
+        {/* Warning banners */}
         {!weather.suitable_for_spraying && !loading && (
           <div className="mt-10 p-6 bg-red-600 text-white border border-black flex items-center gap-4">
-            <AlertTriangle size={20} className="flex-shrink-0" />
-            <p className="text-base font-black uppercase tracking-tighter">
-              Spraying not recommended in {selectedCity} — {weather.condition}. Wind: {weather.windSpeed} km/h.
+            <AlertTriangle size={20} />
+            <p className="text-base font-black uppercase">
+              Spraying not recommended in {selectedCity}
             </p>
           </div>
         )}
+
         {weather.suitable_for_spraying && weather.windSpeed > 12 && !loading && (
           <div className="mt-10 p-6 bg-orange-500 text-white border border-black flex items-center gap-4">
-            <AlertTriangle size={20} className="flex-shrink-0" />
-            <p className="text-base font-black uppercase tracking-tighter">
-              Moderate wind ({weather.windSpeed} km/h) in {selectedCity} — proceed with caution.
+            <AlertTriangle size={20} />
+            <p className="text-base font-black uppercase">
+              Moderate wind — proceed with caution
             </p>
           </div>
         )}
+
       </div>
     </div>
   );

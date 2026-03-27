@@ -41,7 +41,37 @@ export const HomePage = () => {
   return (
     <div className="w-full bg-white overflow-hidden">
       {/* Hero */}
-      <section className="relative min-h-[50vh] flex flex-col justify-center px-5 py-10 max-w-6xl mx-auto">
+      <section className="relative min-h-[50vh] flex flex-col justify-center px-5 py-10 max-w-6xl mx-auto border-b border-black">
+        {/* Video Background */}
+        <div className="absolute inset-0 z-0 pointer-events-none bg-zinc-100 flex items-center justify-center overflow-hidden">
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="absolute inset-0 w-full h-full object-cover grayscale opacity-30"
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
+              const fallback = document.getElementById('video-fallback');
+              if (fallback) fallback.style.display = 'flex';
+            }}
+          >
+            <source src="/drone-video.mp4" type="video/mp4" />
+          </video>
+          
+          {/* Fallback UI when video is missing */}
+          <div id="video-fallback" style={{ display: 'none' }} className="absolute inset-0 flex-col items-center justify-center text-zinc-400 opacity-60 z-0">
+            <DroneIcon size={64} className="mb-4 animate-bounce" />
+            <p className="font-black uppercase tracking-widest text-sm text-center px-4">
+              Video not found.<br/>
+              Please upload your video to the <code className="bg-zinc-200 px-1 rounded text-black">/public</code> folder<br/>
+              and name it <code className="bg-zinc-200 px-1 rounded text-black">drone-video.mp4</code>
+            </p>
+          </div>
+
+          <div className="absolute inset-0 bg-gradient-to-b from-white/40 via-transparent to-white z-10" />
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center relative z-10">
           <div className="lg:col-span-8">
             <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}>
