@@ -15,7 +15,6 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from app.db.database import init_db
 from app.config import GEMINI_API_KEY
 
 # ── Routers ────────────────────────────────────────────────────────────────────
@@ -44,7 +43,6 @@ ALLOWED_ORIGINS = [o.strip() for o in os.environ.get(
     "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173"
 ).split(",") if o.strip()]
 
-# On Vercel, add the production domain automatically
 VERCEL_URL = os.environ.get("VERCEL_URL", "")
 if VERCEL_URL and f"https://{VERCEL_URL}" not in ALLOWED_ORIGINS:
     ALLOWED_ORIGINS.append(f"https://{VERCEL_URL}")
@@ -70,7 +68,6 @@ try:
     from slowapi.util import get_remote_address
     from slowapi.errors import RateLimitExceeded
     from slowapi.middleware import SlowAPIMiddleware
-
     limiter = Limiter(key_func=get_remote_address, default_limits=["200/minute"])
     RATE_LIMIT_AVAILABLE = True
     logger.info("✅ Rate limiting enabled (slowapi)")
@@ -116,7 +113,7 @@ app.include_router(tracking_router)
 app.include_router(admin_router)
 
 
-# ── Static files (local dev only — Vercel serves these via vercel.json routes) ─
+# ── Static files (local dev only) ─────────────────────────────────────────────
 if not IS_VERCEL:
     static_path = Path(__file__).parent / "static"
     dist_path   = static_path / "dist"
@@ -139,15 +136,11 @@ if not IS_VERCEL:
     if static_path.exists():
         app.mount("/static", StaticFiles(directory=str(static_path)), name="static")
 
-    # ── SPA catch-all (local only) ─────────────────────────────────────────────
     def _spa_response():
         index = dist_path / "index.html"
         if index.exists():
             return FileResponse(str(index))
-        return JSONResponse(
-            status_code=503,
-            content={"error": "Frontend not built. Run: cd peace-haven && npm run build"},
-        )
+        return JSONResponse(status_code=503, content={"error": "Frontend not built."})
 
     @app.get("/")
     @app.get("/book")
@@ -187,29 +180,27 @@ def health_check():
     }
 
 
-# ── Startup ────────────────────────────────────────────────────────────────────
-@app.on_event("startup")
-def startup():
-    logger.info("🚀 AgroDrone Platform v3.0 starting... [env=%s, vercel=%s]", ENV, IS_VERCEL)
-    init_db()
-    logger.info("✅ Database initialized")
-
-    from app.services.ai_service import init_ai
-    init_ai(GEMINI_API_KEY)
-
-    _seed_admin()
-    logger.info("✅ AgroDrone Platform ready")
-
-
-def _seed_admin():
-    """Create default admin account if none exists."""
-    from app.db.database import SessionLocal
+# ── DB init + seed — runs once on startup ─────────────────────────────────────
+def _init_and_seed():
+    """Initialize DB tables then seed default admin. Safe to call multiple times."""
+    from app.db.database import init_db, SessionLocal
     from app.db.models import AdminUser
     from app.utils.auth import hash_password
+    import sqlalchemy
 
+    # 1. Create all tables first
+    try:
+        init_db()
+        logger.info("✅ Database initialized")
+    except Exception as e:
+        logger.error("❌ Database init failed: %s", e)
+        raise
+
+    # 2. Seed admin only after tables exist — wrapped in its own try/except
     db = SessionLocal()
     try:
-        if db.query(AdminUser).count() == 0:
+        count = db.query(AdminUser).count()
+        if count == 0:
             db.add(AdminUser(
                 username="admin",
                 password_hash=hash_password("agrodrone2024"),
@@ -217,6 +208,41 @@ def _seed_admin():
                 role="superadmin",
             ))
             db.commit()
-            logger.info("✅ Default admin seeded — username: admin | Change password on first login!")
+            logger.info("✅ Default admin seeded — username: admin")
+        else:
+            logger.info("✅ Admin users already exist (%d)", count)
+    except sqlalchemy.exc.ProgrammingError as e:
+        # Tables might not exist yet on very first cold start race condition
+        logger.warning("⚠️  Admin seed skipped (table not ready): %s", e)
+        db.rollback()
+    except Exception as e:
+        logger.error("❌ Admin seed failed: %s", e)
+        db.rollback()
     finally:
         db.close()
+
+
+# ── Startup event ──────────────────────────────────────────────────────────────
+@app.on_event("startup")
+def startup():
+    logger.info("🚀 AgroDrone Platform v3.0 starting... [env=%s, vercel=%s]", ENV, IS_VERCEL)
+
+    _init_and_seed()
+
+    from app.services.ai_service import init_ai
+    init_ai(GEMINI_API_KEY)
+
+    logger.info("✅ AgroDrone Platform ready")
+
+
+# ── Vercel: also run init at module import time ────────────────────────────────
+# On Vercel, startup events may not fire reliably on cold starts.
+# Running init at import ensures tables exist before any request hits.
+if IS_VERCEL:
+    try:
+        _init_and_seed()
+        from app.services.ai_service import init_ai
+        init_ai(GEMINI_API_KEY)
+        logger.info("✅ Vercel cold-start init complete")
+    except Exception as e:
+        logger.error("❌ Vercel cold-start init failed: %s", e)
