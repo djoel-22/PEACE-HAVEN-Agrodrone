@@ -1,8 +1,11 @@
+// ============================================================
+// TrackOrderPage.tsx — fixed bg-brand-accent contrast on status banner
+// ============================================================
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import {
   Search, MapPin, Calendar, Sprout,
-  Drone as DroneIcon, Clock, CheckCircle2, Circle,
+  Plane, Clock, CheckCircle2, Circle,
   Ruler, User, Phone
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
@@ -13,10 +16,10 @@ import type { Order } from '../../types';
 const STEPS = ['Placed', 'Scheduled', 'In Progress', 'Completed'];
 
 export const TrackOrderPage = () => {
-  const [searchId, setSearchId] = useState('');
-  const [order, setOrder] = useState<Order | null>(null);
+  const [searchId, setSearchId]   = useState('');
+  const [order, setOrder]         = useState<Order | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError]         = useState<string | null>(null);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,7 +30,7 @@ export const TrackOrderPage = () => {
     try {
       const result = await trackByBookingId(id);
       setOrder(mapOrder(result));
-    } catch (err: any) {
+    } catch {
       setError(`No order found for "${id}". Please check the booking ID and try again.`);
       setOrder(null);
     } finally {
@@ -45,10 +48,10 @@ export const TrackOrderPage = () => {
 
   const getStatusMessage = (status: string) => {
     switch (status) {
-      case 'Scheduled': return 'Your service has been scheduled. Our pilot will arrive at the farm on time.';
+      case 'Scheduled':   return 'Your service has been scheduled. Our pilot will arrive at the farm on time.';
       case 'In Progress': return 'Drone is currently spraying your field. Live monitoring active.';
-      case 'Completed': return 'Service completed successfully. Thank you for choosing Peace Haven!';
-      default: return 'Your booking has been received and is being processed by our team.';
+      case 'Completed':   return 'Service completed successfully. Thank you for choosing Peace Haven!';
+      default:            return 'Your booking has been received and is being processed by our team.';
     }
   };
 
@@ -80,7 +83,7 @@ export const TrackOrderPage = () => {
           <button
             type="submit"
             disabled={isLoading}
-            className="h-16 px-10 bg-black text-white font-black uppercase tracking-widest text-[10px] hover:bg-brand-accent transition-all border-l border-black disabled:opacity-50 flex items-center gap-2"
+            className="h-16 px-10 bg-black text-white font-black uppercase tracking-widest text-[10px] hover:bg-[#4a9a40] transition-all border-l border-black disabled:opacity-50 flex items-center gap-2"
           >
             {isLoading ? (
               <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Searching...</>
@@ -88,7 +91,6 @@ export const TrackOrderPage = () => {
           </button>
         </form>
 
-        {/* Error */}
         {error && (
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
             className="mb-8 p-5 border border-red-300 bg-red-50 text-red-700 font-bold text-sm">
@@ -96,16 +98,21 @@ export const TrackOrderPage = () => {
           </motion.div>
         )}
 
-        {/* Result */}
         {order && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
-            {/* Status banner */}
+
+            {/* Status banner — FIX: was bg-brand-accent (dark green) with mixed text
+                Now: Completed = bright green bg + BLACK text (readable)
+                     In Progress = black bg + WHITE text (readable)
+                     Other = white bg + BLACK text (readable) */}
             <div className={cn('p-6 border border-black flex items-center gap-5',
-              order.status === 'Completed' ? 'bg-brand-accent text-black' :
-              order.status === 'In Progress' ? 'bg-black text-white' : 'bg-white'
-            )}>
+              order.status === 'Completed'   ? 'text-black'       :
+              order.status === 'In Progress' ? 'bg-black text-white' : 'bg-white text-black'
+            )}
+            style={order.status === 'Completed' ? { backgroundColor: '#4a9a40' } : undefined}
+            >
               <div className="w-12 h-12 border border-current flex items-center justify-center flex-shrink-0">
-                {order.status === 'Completed' ? <CheckCircle2 size={24} /> : <DroneIcon size={24} />}
+                {order.status === 'Completed' ? <CheckCircle2 size={24} /> : <Plane size={24} />}
               </div>
               <div>
                 <p className="text-[8px] font-black uppercase tracking-[0.3em] opacity-60 mb-1">Current Status</p>
@@ -114,19 +121,22 @@ export const TrackOrderPage = () => {
               </div>
             </div>
 
-            {/* Progress steps */}
+            {/* Progress steps — FIX: completed steps use bright green + black text */}
             <div className="grid grid-cols-4 gap-0 border border-black">
               {getSteps(order.status).map((step, idx) => (
-                <div key={step.label} className={cn('p-6 border-black flex flex-col items-center text-center gap-3', idx !== 3 && 'border-r',
-                  step.status === 'completed' ? 'bg-brand-accent' :
-                  step.status === 'current' ? 'bg-black text-white' : 'bg-white'
-                )}>
+                <div key={step.label}
+                  className={cn('p-6 border-black flex flex-col items-center text-center gap-3',
+                    idx !== 3 && 'border-r',
+                    step.status === 'current' ? 'bg-black text-white' : 'bg-white text-black'
+                  )}
+                  style={step.status === 'completed' ? { backgroundColor: '#4a9a40' } : undefined}
+                >
                   <div className={cn('w-8 h-8 border flex items-center justify-center',
                     step.status === 'completed' ? 'border-black bg-black text-white' :
-                    step.status === 'current' ? 'border-white' : 'border-black/20'
+                    step.status === 'current'   ? 'border-white' : 'border-black/20'
                   )}>
                     {step.status === 'completed' ? <CheckCircle2 size={16} /> :
-                     step.status === 'current' ? <div className="w-2 h-2 bg-white rounded-full animate-pulse" /> :
+                     step.status === 'current'   ? <div className="w-2 h-2 bg-white rounded-full animate-pulse" /> :
                      <Circle size={16} className="text-zinc-200" />}
                   </div>
                   <p className={cn('text-[8px] font-black uppercase tracking-widest',
@@ -139,14 +149,14 @@ export const TrackOrderPage = () => {
             {/* Order details */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-0 border border-black">
               {[
-                { icon: User, label: 'Customer', value: order.customerName },
-                { icon: Phone, label: 'Phone', value: order.phone || '—' },
-                { icon: Sprout, label: 'Pesticide / Crop', value: order.cropType },
-                { icon: Ruler, label: 'Land Area', value: order.area },
-                { icon: MapPin, label: 'Location', value: order.location },
-                { icon: Calendar, label: 'Scheduled Date', value: order.date || '—' },
-                { icon: Clock, label: 'Scheduled Time', value: order.scheduledTime || '—' },
-                { icon: DroneIcon, label: 'Assigned Drone', value: order.droneId || 'Not yet assigned' },
+                { icon: User,   label: 'Customer',         value: order.customerName },
+                { icon: Phone,  label: 'Phone',             value: order.phone || '—' },
+                { icon: Sprout, label: 'Pesticide / Crop',  value: order.cropType },
+                { icon: Ruler,  label: 'Land Area',         value: order.area },
+                { icon: MapPin, label: 'Location',          value: order.location },
+                { icon: Calendar, label: 'Scheduled Date',  value: order.date || '—' },
+                { icon: Clock,  label: 'Scheduled Time',    value: order.scheduledTime || '—' },
+                { icon: Plane,  label: 'Assigned Drone',    value: order.droneId || 'Not yet assigned' },
               ].map((item, idx) => (
                 <div key={item.label} className={cn('p-6 border-black flex items-center gap-4',
                   idx % 2 === 0 && 'md:border-r',
@@ -165,10 +175,9 @@ export const TrackOrderPage = () => {
           </motion.div>
         )}
 
-        {/* Empty state */}
         {!order && !error && (
           <div className="text-center py-20 border border-black/10">
-            <DroneIcon size={48} className="mx-auto mb-6 text-zinc-200" />
+            <Plane size={48} className="mx-auto mb-6 text-zinc-200" />
             <p className="text-zinc-300 font-black uppercase tracking-widest text-sm">Enter your booking ID above to track your order</p>
           </div>
         )}

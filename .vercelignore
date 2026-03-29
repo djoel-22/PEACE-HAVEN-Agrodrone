@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+.env
+
+# Local DB
+agrodrone.db
+
+# Dev tools
+.git/
+*.log
+test_*.py
+init_db.py
+migrate_db_v3.py
+UPGRADE_GUIDE.md
+structure.txt
+
+# Frontend source (Vercel builds this separately)
+peace-haven/node_modules/
+peace-haven/src/
+peace-haven/.env*
+peace-haven/tsconfig.json
+
+# App static (Vercel serves from peace-haven/dist directly)
+app/static/

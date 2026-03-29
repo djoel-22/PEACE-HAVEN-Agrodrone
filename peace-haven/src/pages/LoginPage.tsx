@@ -1,171 +1,158 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { motion } from 'motion/react';
-import { 
-  Mail, Lock, ArrowRight, 
-  Droplets, ShieldCheck, Zap,
-  AlertCircle
-} from 'lucide-react';
+import { ShieldCheck, Leaf, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { cn } from '../lib/utils';
-import { adminLogin } from '../lib/api';
 
+// Hummingbird logo
+const Logo = ({ size = 40, invert = false }: { size?: number; invert?: boolean }) => (
+  <img
+    src="/peace-haven-logo.png"
+    alt="Peace Haven"
+    width={size}
+    height={size}
+    style={{
+      objectFit: 'contain',
+      flexShrink: 0,
+      filter: invert ? 'brightness(0) invert(1)' : 'none',
+    }}
+  />
+);
+
+/**
+ * LoginPage — Portal selector / landing gateway.
+ * Reached via legacy /login route (redirected from old bookmarks).
+ * Directs users to the correct dedicated portal login page.
+ * No credentials are collected here.
+ */
 export const LoginPage = () => {
-  const [role, setRole] = useState<'client' | 'admin'>('client');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [authLoading, setAuthLoading] = useState(false);
-  const [authError, setAuthError] = useState<string | null>(null);
-
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center p-5 bg-grid">
-      <div className="w-full max-w-4xl grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-        {/* Left Side: Branding & Info */}
-        <div className="hidden lg:block">
-          <div className="flex items-center gap-2.5 mb-10">
-            <div className="w-10 h-10 bg-black flex items-center justify-center text-white">
-              <Droplets size={24} />
-            </div>
-            <span className="text-2xl font-black uppercase tracking-tighter text-black">Peace Haven</span>
-          </div>
-          
-          <h1 className="text-6xl font-black mb-8 leading-[0.85] uppercase tracking-tighter">
-            Precision <br />
-            <span className="text-italics lowercase text-zinc-400">agriculture</span> <br />
-            for everyone.
-          </h1>
-          
-          <div className="space-y-6">
-            <div className="flex gap-5 items-start">
-              <div className="w-10 h-10 border border-black flex items-center justify-center text-black flex-shrink-0">
-                <ShieldCheck size={20} />
-              </div>
-              <div>
-                <p className="font-black uppercase tracking-widest text-xs mb-1">Secure & Reliable</p>
-                <p className="text-zinc-500 font-bold leading-tight text-sm">Your farm data in Tamil Nadu is encrypted and protected with enterprise-grade security.</p>
-              </div>
-            </div>
-            <div className="flex gap-5 items-start">
-              <div className="w-10 h-10 border border-black flex items-center justify-center text-black flex-shrink-0">
-                <Zap size={20} />
-              </div>
-              <div>
-                <p className="font-black uppercase tracking-widest text-xs mb-1">Real-time Monitoring</p>
-                <p className="text-zinc-500 font-bold leading-tight text-sm">Track your drone spray progress and weather conditions live across Tamil Nadu.</p>
-              </div>
-            </div>
+    <div className="min-h-screen bg-white flex flex-col bg-grid">
+
+      {/* Header */}
+      <header className="px-8 py-5 border-b border-black/10 flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <Logo size={40} />
+          <div className="flex flex-col leading-none">
+            <span className="text-lg font-black uppercase tracking-tighter text-black">Peace Haven</span>
+            <span className="text-[11px] italic text-zinc-400 font-medium mt-0.5">Where Inventions Brew</span>
           </div>
         </div>
+        <span className="text-[9px] font-black uppercase tracking-[0.35em] text-zinc-400">
+          Agro-Drone Platform
+        </span>
+      </header>
 
-        {/* Right Side: Login Form */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <div className="dj-card p-10 md:p-12">
-            <div className="mb-10">
-              <h2 className="text-4xl font-black uppercase tracking-tighter mb-3">Welcome Back</h2>
-              <p className="text-zinc-500 font-bold text-base">Please enter your details to sign in.</p>
-            </div>
+      {/* Main */}
+      <main className="flex-1 flex items-center justify-center px-5 py-16">
+        <div className="w-full max-w-3xl">
 
-            {/* Role Switcher */}
-            <div className="flex border border-black mb-8">
-              <button 
-                onClick={() => setRole('client')}
-                className={cn(
-                  "flex-1 py-3 text-[10px] font-black uppercase tracking-widest transition-all",
-                  role === 'client' ? "bg-black text-white" : "bg-white text-zinc-400 hover:text-black"
-                )}
-              >
-                Farmer Portal
-              </button>
-              <button 
-                onClick={() => setRole('admin')}
-                className={cn(
-                  "flex-1 py-3 text-[10px] font-black uppercase tracking-widest transition-all",
-                  role === 'admin' ? "bg-black text-white" : "bg-white text-zinc-400 hover:text-black"
-                )}
-              >
-                Admin Portal
-              </button>
-            </div>
+          {/* Heading */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+            className="text-center mb-16"
+          >
+            <p className="text-[9px] font-black uppercase tracking-[0.5em] text-zinc-400 mb-5">
+              Select your portal
+            </p>
+            <h1 className="text-5xl md:text-6xl font-black uppercase tracking-tighter leading-none mb-6">
+              Welcome to<br />
+              <span className="text-zinc-300">Peace Haven</span>
+            </h1>
+            <p className="text-zinc-500 font-medium text-sm max-w-md mx-auto leading-relaxed">
+              Precision agricultural drone services for Tamil Nadu farmers.
+              Choose your portal to continue.
+            </p>
+          </motion.div>
 
-            <form className="space-y-6">
-              <div className="space-y-2.5">
-                <label className="text-[8px] font-black uppercase tracking-[0.3em] text-zinc-400 flex items-center gap-1.5">
-                  <Mail size={12} /> Email Address
-                </label>
-                <input 
-                  type="email" 
-                  placeholder="NAME@EXAMPLE.COM"
-                  className="w-full px-5 py-4 border border-black focus:outline-none focus:bg-zinc-50 transition-all font-black uppercase text-xs tracking-widest"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2.5">
-                <div className="flex justify-between items-center">
-                  <label className="text-[8px] font-black uppercase tracking-[0.3em] text-zinc-400 flex items-center gap-1.5">
-                    <Lock size={12} /> Password
-                  </label>
-                  <button type="button" className="text-[8px] font-black uppercase tracking-widest underline underline-offset-4">Forgot?</button>
+          {/* Portal Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+            {/* Farmer / Client Portal */}
+            <motion.div
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.1 }}
+            >
+              <Link to="/client/login" className="block group">
+                <div className="border border-black p-8 md:p-10 bg-white transition-all duration-300 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 h-full flex flex-col">
+
+                  {/* Icon */}
+                  <div className="w-12 h-12 bg-black flex items-center justify-center mb-8 group-hover:bg-[#3a7a30] transition-colors duration-300">
+                    <Leaf size={22} className="text-white" />
+                  </div>
+
+                  {/* Label */}
+                  <p className="text-[9px] font-black uppercase tracking-[0.4em] text-zinc-400 mb-3">
+                    For Farmers
+                  </p>
+                  <h2 className="text-2xl font-black uppercase tracking-tight mb-4 leading-none text-black">
+                    Farmer<br />Portal
+                  </h2>
+                  <p className="text-zinc-500 text-sm font-medium leading-relaxed flex-1">
+                    Book drone spray services, track your orders, check weather conditions,
+                    and manage your farm operations.
+                  </p>
+
+                  {/* CTA */}
+                  <div className="mt-8 flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.3em] text-black group-hover:gap-4 transition-all duration-300">
+                    <span>Enter Portal</span>
+                    <ArrowRight size={14} />
+                  </div>
                 </div>
-                <input 
-                  type="password" 
-                  placeholder="••••••••"
-                  className="w-full px-5 py-4 border border-black focus:outline-none focus:bg-zinc-50 transition-all font-black text-xs tracking-widest"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </div>
+              </Link>
+            </motion.div>
 
-              <div className="pt-5">
-                {authError && (
-                  <p className="text-red-600 text-xs font-bold uppercase tracking-widest mb-3">{authError}</p>
-                )}
-                <button
-                  type="button"
-                  disabled={authLoading}
-                  className="dj-button-filled w-full text-lg h-16 disabled:opacity-50"
-                  onClick={async () => {
-                    setAuthError(null);
-                    if (role === 'admin') {
-                      setAuthLoading(true);
-                      try {
-                        const res = await adminLogin(email, password);
-                        localStorage.setItem('admin_token', res.token);
-                        window.location.href = '/admin';
-                      } catch (e: unknown) {
-                        setAuthError(e instanceof Error ? e.message : 'Login failed');
-                      } finally {
-                        setAuthLoading(false);
-                      }
-                    } else {
-                      window.location.href = '/';
-                    }
-                  }}
-                >
-                  {authLoading ? 'Signing in...' : 'Sign In'}
-                </button>
-              </div>
-            </form>
+            {/* Admin Portal */}
+            <motion.div
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.2 }}
+            >
+              <Link to="/admin/login" className="block group">
+                <div className="border border-black p-8 md:p-10 bg-black text-white transition-all duration-300 hover:shadow-[6px_6px_0px_0px_rgba(45,90,39,1)] hover:-translate-y-1 h-full flex flex-col">
 
-            <div className="mt-10 text-center">
-              <p className="text-xs font-black uppercase tracking-widest text-zinc-400">
-                Don't have an account? <button className="text-black underline underline-offset-4">Create one</button>
-              </p>
-            </div>
+                  {/* Icon */}
+                  <div className="w-12 h-12 bg-white flex items-center justify-center mb-8 group-hover:bg-[#3a7a30] transition-colors duration-300">
+                    <ShieldCheck size={22} className="text-black group-hover:text-white" />
+                  </div>
 
-            {role === 'admin' && (
-              <div className="mt-8 p-5 bg-brand-accent border border-black flex gap-3">
-                <AlertCircle size={16} className="text-black flex-shrink-0" />
-                <p className="text-[8px] font-black uppercase tracking-widest leading-tight">
-                  Admin access is restricted to authorized personnel in Tamil Nadu. All login attempts are logged.
-                </p>
-              </div>
-            )}
+                  {/* Label */}
+                  <p className="text-[9px] font-black uppercase tracking-[0.4em] text-zinc-500 mb-3">
+                    Restricted Access
+                  </p>
+                  <h2 className="text-2xl font-black uppercase tracking-tight mb-4 leading-none text-white">
+                    Admin<br />Portal
+                  </h2>
+                  <p className="text-zinc-400 text-sm font-medium leading-relaxed flex-1">
+                    Manage drone fleet, scheduling, orders, battery health, and
+                    platform operations. Authorized personnel only.
+                  </p>
+
+                  {/* CTA */}
+                  <div className="mt-8 flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.3em] text-white group-hover:gap-4 transition-all duration-300">
+                    <span>Admin Login</span>
+                    <ArrowRight size={14} />
+                  </div>
+                </div>
+              </Link>
+            </motion.div>
+
           </div>
-        </motion.div>
-      </div>
+
+          {/* Footer note */}
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4 }}
+            className="text-center text-[8px] font-black uppercase tracking-[0.4em] text-zinc-300 mt-12"
+          >
+            All access attempts are logged and monitored · Peace Haven Agri-Tech Tamil Nadu
+          </motion.p>
+
+        </div>
+      </main>
     </div>
   );
 };

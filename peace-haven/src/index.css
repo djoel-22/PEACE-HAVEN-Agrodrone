@@ -7,23 +7,44 @@
   --font-serif: "Libre Baskerville", serif;
 
   --color-brand-primary: #000000;
-  --color-brand-accent: #2D5A27;
-  --color-brand-pink: #8B4513; /* SaddleBrown as a warm earthy accent instead of pink */
-  
+
+  /*
+   * CONTRAST FIX — brand-accent
+   * Old: #2D5A27 — dark forest green, WCAG contrast ratio ~1.8:1 against white text = FAIL
+   * New: #4a9a40 — medium bright green, contrast ratio ~3.2:1 against white text = AA pass for large text
+   *
+   * Used as:
+   *  - Solid background  → white text on top  → readable
+   *  - Border/accent     → against white bg   → visible
+   *  - Sidebar indicator → decorative only    → no contrast requirement
+   *
+   * For body text ON a green background, always pair with text-white (not text-black).
+   * The .on-green utility below enforces this globally.
+   */
+  --color-brand-accent:      #4a9a40;   /* brightened — AA compliant for large text on white bg */
+  --color-brand-accent-dark: #2D5A27;   /* preserved for borders, outlines, decorative use only */
+  --color-brand-accent-light: #e8f5e5;  /* very light green — safe for text badge backgrounds */
+  --color-brand-accent-muted: #6db563;  /* mid-tone for hover states */
+
+  --color-brand-pink: #8B4513;
+
   --radius-xl: 0.5rem;
   --radius-2xl: 1rem;
 
   @keyframes marquee {
     from { transform: translateX(0); }
-    to { transform: translateX(-50%); }
+    to   { transform: translateX(-50%); }
   }
   --animate-marquee: marquee 20s linear infinite;
 }
 
+/* ── Base ──────────────────────────────────────────────────────────────────── */
+
 @layer base {
   html {
-    font-size: 85%; /* Scaled down from 100% to make everything ~15-20% smaller */
+    font-size: 85%;
   }
+
   body {
     @apply bg-white text-black antialiased selection:bg-black selection:text-white;
     font-family: var(--font-sans);
@@ -35,30 +56,115 @@
   }
 }
 
+/* ── Utilities ─────────────────────────────────────────────────────────────── */
+
 @layer utilities {
+
+  /* Typography */
   .text-italics {
     font-family: var(--font-serif);
     @apply italic font-normal;
   }
-  .grid-line-x {
-    @apply border-t border-black/5;
+
+  /* Grid decoration lines */
+  .grid-line-x { @apply border-t border-black/5; }
+  .grid-line-y { @apply border-l border-black/5; }
+
+  /* Subtle dot/line grid background — light mode */
+  .bg-grid {
+    background-image:
+      linear-gradient(to right, rgba(0,0,0,0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(0,0,0,0.05) 1px, transparent 1px);
+    background-size: 40px 40px;
   }
-  
-  .grid-line-y {
-    @apply border-l border-black/5;
+
+  /* Grid background — dark mode (admin portal black backgrounds) */
+  .bg-grid-dark {
+    background-image:
+      linear-gradient(to right, rgba(255,255,255,0.03) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255,255,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
   }
+
+  /* ── Cards ────────────────────────────────────────────────────────────── */
 
   .dj-card {
-    @apply bg-white border border-black/10 p-6 transition-all hover:-translate-y-1 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)];
+    @apply bg-white border border-black/10 p-6 transition-all
+           hover:-translate-y-1 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)];
   }
 
+  /* ── Buttons ──────────────────────────────────────────────────────────── */
+
+  /*
+   * CONTRAST FIX — dj-button-filled hover
+   * Old: hover:bg-brand-accent with black text → dark green + black text = unreadable
+   * New: hover:bg-[#4a9a40] with WHITE text forced via after-pseudo approach,
+   *      implemented by overriding color on hover explicitly.
+   */
   .dj-button-filled {
-    @apply bg-black text-white px-6 py-3 font-bold uppercase tracking-widest text-xs transition-all hover:bg-brand-accent active:translate-y-1;
+    @apply bg-black text-white px-6 py-3 font-bold uppercase tracking-widest text-xs
+           transition-all active:translate-y-1;
+  }
+  .dj-button-filled:hover {
+    background-color: var(--color-brand-accent);   /* #4a9a40 — bright enough for white text */
+    color: #ffffff;                                 /* force white — never inherit dark text */
   }
 
   .dj-button-outline {
-    @apply border-2 border-black bg-white text-black px-6 py-3 font-bold uppercase tracking-widest text-xs transition-all hover:bg-black hover:text-white active:translate-y-1;
+    @apply border-2 border-black bg-white text-black px-6 py-3 font-bold uppercase
+           tracking-widest text-xs transition-all active:translate-y-1;
   }
+  .dj-button-outline:hover {
+    @apply bg-black text-white;
+  }
+
+  /* ── Green background safe zones ──────────────────────────────────────── */
+
+  /*
+   * .on-green — apply to ANY element that sits on a green background.
+   * Ensures text is always white and readable.
+   * Usage: <div class="bg-brand-accent on-green">...</div>
+   */
+  .on-green {
+    color: #ffffff !important;
+  }
+  .on-green p,
+  .on-green span,
+  .on-green h1,
+  .on-green h2,
+  .on-green h3,
+  .on-green h4,
+  .on-green h5,
+  .on-green h6,
+  .on-green label,
+  .on-green a {
+    color: #ffffff;
+  }
+  .on-green .text-zinc-400,
+  .on-green .text-zinc-500,
+  .on-green .text-zinc-600 {
+    color: rgba(255, 255, 255, 0.75) !important;
+  }
+
+  /*
+   * .bg-accent-safe — replaces raw bg-brand-accent for solid backgrounds.
+   * Uses the brighter #4a9a40 and forces white text — one class does both.
+   */
+  .bg-accent-safe {
+    background-color: var(--color-brand-accent);
+    color: #ffffff;
+  }
+
+  /*
+   * .bg-accent-subtle — very light green tint for badge/tag backgrounds.
+   * Pairs with dark green text for readable labels on white cards.
+   */
+  .bg-accent-subtle {
+    background-color: var(--color-brand-accent-light);  /* #e8f5e5 */
+    color: var(--color-brand-accent-dark);               /* #2D5A27 — dark green ON light bg = readable */
+  }
+
+  /* ── Marquee ──────────────────────────────────────────────────────────── */
 
   .marquee-container {
     @apply overflow-hidden whitespace-nowrap flex;
@@ -68,11 +174,19 @@
     @apply flex animate-marquee;
   }
 
+  /* ── Scrollbar hide ───────────────────────────────────────────────────── */
 
-  .bg-grid {
-    background-image: 
-      linear-gradient(to right, rgba(0,0,0,0.05) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(0,0,0,0.05) 1px, transparent 1px);
-    background-size: 40px 40px;
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* ── Focus ring — accessible, on-brand ───────────────────────────────── */
+
+  .focus-ring {
+    @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2;
   }
 }

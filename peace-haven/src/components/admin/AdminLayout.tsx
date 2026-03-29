@@ -1,150 +1,296 @@
-import React, { useState } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { 
-  LayoutDashboard, ClipboardList, Calendar, 
-  Drone as DroneIcon, Battery, CloudSun, 
-  Users, Settings, LogOut, Bell, Search, Menu, X, Zap
+import {
+  LayoutDashboard, ClipboardList, Calendar,
+  Plane, Battery, CloudSun,
+  Users, Settings, LogOut, Bell, Search, Menu, X
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import { adminLogout } from '../../lib/api';
+
+// ── Types ─────────────────────────────────────────────────────────────────────
+interface AdminUser {
+  username:  string;
+  full_name: string;
+  role:      string;
+}
+
+// Hummingbird logo — inverted white for dark sidebar
+const LogoWhite = ({ size = 28 }: { size?: number }) => (
+  <img
+    src="/peace-haven-logo.png"
+    alt="Peace Haven"
+    width={size}
+    height={size}
+    style={{ objectFit: 'contain', flexShrink: 0, filter: 'invert(1)', display: 'block' }}
+  />
+);
 
 export const AdminLayout = ({ children }: { children: React.ReactNode }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [adminUser, setAdminUser]         = useState<AdminUser | null>(null);
+  const [loggingOut, setLoggingOut]       = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
   const location = useLocation();
 
+  // ── Load stored admin user info ────────────────────────────────────────────
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('admin_user');
+      if (raw) setAdminUser(JSON.parse(raw));
+    } catch {
+      // ignore malformed JSON
+    }
+  }, []);
+
+  // ── Derive initials for avatar ─────────────────────────────────────────────
+  const initials = adminUser?.full_name
+    ? adminUser.full_name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
+    : adminUser?.username?.slice(0, 2).toUpperCase() ?? 'AD';
+
+  const displayName = adminUser?.full_name ?? adminUser?.username ?? 'Administrator';
+  const displayRole = adminUser?.role === 'superadmin' ? 'Super Admin' : 'Admin';
+
+  // ── Logout ─────────────────────────────────────────────────────────────────
+  const handleLogout = async () => {
+    setLoggingOut(true);
+    try {
+      await adminLogout(); // calls server + clears tokens + redirects
+    } catch {
+      // adminLogout redirects in finally block even on error
+    }
+  };
+
   const menuItems = [
-    { name: 'Dashboard', path: '/admin', icon: LayoutDashboard },
-    { name: 'Orders', path: '/admin/orders', icon: ClipboardList },
-    { name: 'Scheduling', path: '/admin/scheduling', icon: Calendar },
-    { name: 'Drones', path: '/admin/drones', icon: DroneIcon },
-    { name: 'Battery Health', path: '/admin/battery', icon: Battery },
-    { name: 'Weather Monitor', path: '/admin/weather', icon: CloudSun },
-    { name: 'Users', path: '/admin/users', icon: Users },
-    { name: 'Settings', path: '/admin/settings', icon: Settings },
+    { name: 'Dashboard',       path: '/admin',            icon: LayoutDashboard },
+    { name: 'Orders',          path: '/admin/orders',     icon: ClipboardList   },
+    { name: 'Scheduling',      path: '/admin/scheduling', icon: Calendar        },
+    { name: 'Drones',          path: '/admin/drones',     icon: Plane           },
+    { name: 'Battery Health',  path: '/admin/battery',    icon: Battery         },
+    { name: 'Weather Monitor', path: '/admin/weather',    icon: CloudSun        },
+    { name: 'Users',           path: '/admin/users',      icon: Users           },
+    { name: 'Settings',        path: '/admin/settings',   icon: Settings        },
   ];
+
+  const isActive = (path: string) =>
+    path === '/admin'
+      ? location.pathname === '/admin'
+      : location.pathname.startsWith(path);
 
   return (
     <div className="min-h-screen bg-white flex bg-grid">
-      {/* Sidebar */}
+
+      {/* ── Sidebar ─────────────────────────────────────────────────────────── */}
       <aside className={cn(
-        "fixed inset-y-0 left-0 z-50 bg-black text-white transition-all duration-500 flex flex-col border-r border-black",
+        "fixed inset-y-0 left-0 z-50 bg-black text-white transition-all duration-300 flex flex-col",
+        "border-r border-white/10",
         isSidebarOpen ? "w-52" : "w-14"
       )}>
-        <div className="p-5 flex items-center justify-between border-b border-white/10">
-          <Link to="/admin" className={cn("flex items-center gap-2.5", !isSidebarOpen && "justify-center w-full")}>
-            <div className="w-8 h-8 bg-brand-accent flex items-center justify-center text-white flex-shrink-0 border border-black group-hover:bg-white group-hover:text-black transition-all">
-              <DroneIcon size={20} />
+
+        {/* Logo */}
+        <div className={cn(
+          "flex items-center border-b border-white/10 transition-all duration-300",
+          isSidebarOpen ? "p-4 gap-3" : "p-3 justify-center"
+        )}>
+          <LogoWhite size={isSidebarOpen ? 30 : 24} />
+          {isSidebarOpen && (
+            <div className="flex flex-col min-w-0">
+              <span className="text-sm font-black uppercase tracking-tight leading-none text-white truncate">
+                Peace Haven
+              </span>
+              <span
+                className="text-[7px] font-black uppercase tracking-[0.4em] leading-none mt-1"
+                style={{ color: '#4a9a40' }}
+              >
+                Admin Portal
+              </span>
             </div>
-            {isSidebarOpen && (
-              <div className="flex flex-col">
-                <span className="text-lg font-extrabold uppercase tracking-tight leading-none">Peace</span>
-                <span className="text-[7px] font-bold uppercase tracking-[0.4em] text-brand-accent leading-none mt-1">Admin</span>
-              </div>
-            )}
-          </Link>
+          )}
         </div>
 
-        <nav className="flex-1 px-3 py-6 space-y-1 overflow-y-auto scrollbar-hide">
-          {menuItems.map((item) => (
-            <Link 
-              key={item.name} 
-              to={item.path}
-              className={cn(
-                "flex items-center gap-3 p-3 transition-all group relative border border-transparent hover:border-white/10",
-                location.pathname === item.path 
-                  ? "bg-white text-black" 
-                  : "text-zinc-500 hover:text-white"
-              )}
-            >
-              <item.icon size={16} className={cn(
-                "flex-shrink-0 transition-transform group-hover:scale-110",
-                location.pathname === item.path ? "text-black" : "text-zinc-500"
-              )} />
-              {isSidebarOpen && (
-                <span className="font-bold uppercase tracking-[0.2em] text-[7px]">{item.name}</span>
-              )}
-              {location.pathname === item.path && (
-                <motion.div 
-                  layoutId="activeNavIndicator"
-                  className="absolute right-0 w-1 h-full bg-brand-accent"
+        {/* Nav */}
+        <nav className="flex-1 px-2 py-4 space-y-0.5 overflow-y-auto scrollbar-hide">
+          {menuItems.map((item) => {
+            const active = isActive(item.path);
+            return (
+              <Link
+                key={item.name}
+                to={item.path}
+                className={cn(
+                  "flex items-center gap-3 px-3 py-3 transition-all group relative",
+                  "border border-transparent",
+                  active
+                    ? "bg-white text-black"
+                    : "text-zinc-500 hover:text-white hover:bg-white/5 hover:border-white/10"
+                )}
+              >
+                <item.icon
+                  size={14}
+                  className={cn(
+                    "flex-shrink-0 transition-transform group-hover:scale-110",
+                    active ? "text-black" : "text-zinc-500 group-hover:text-white"
+                  )}
                 />
-              )}
-            </Link>
-          ))}
+                {isSidebarOpen && (
+                  <span className={cn(
+                    "font-black uppercase tracking-[0.2em] text-[7px] truncate",
+                    active ? "text-black" : "text-zinc-500 group-hover:text-white"
+                  )}>
+                    {item.name}
+                  </span>
+                )}
+                {active && (
+                  <motion.div
+                    layoutId="activeNavIndicator"
+                    className="absolute right-0 top-0 w-0.5 h-full"
+                    style={{ backgroundColor: '#4a9a40' }}
+                  />
+                )}
+              </Link>
+            );
+          })}
         </nav>
 
-        <div className="p-5 border-t border-white/10">
+        {/* Logout */}
+        <div className="p-3 border-t border-white/10">
           <button
-            onClick={() => {
-              localStorage.removeItem('admin_token');
-              window.location.href = '/login';
-            }}
+            onClick={handleLogout}
+            disabled={loggingOut}
             className={cn(
-              "flex items-center gap-3 p-3 text-zinc-500 hover:text-brand-accent transition-all w-full border border-transparent hover:border-brand-accent/20",
+              "flex items-center gap-3 px-3 py-3 w-full transition-all",
+              "text-zinc-600 hover:text-white border border-transparent",
+              "hover:border-red-500/20 hover:bg-red-500/10 disabled:opacity-50",
               !isSidebarOpen && "justify-center"
             )}
           >
-            <LogOut size={16} />
-            {isSidebarOpen && <span className="font-bold uppercase tracking-[0.2em] text-[7px]">Logout</span>}
+            {loggingOut
+              ? <div className="w-4 h-4 border border-zinc-500 border-t-transparent animate-spin flex-shrink-0" />
+              : <LogOut size={14} className="flex-shrink-0" />
+            }
+            {isSidebarOpen && (
+              <span className="font-black uppercase tracking-[0.2em] text-[7px]">
+                {loggingOut ? 'Signing out...' : 'Logout'}
+              </span>
+            )}
           </button>
         </div>
       </aside>
 
-      {/* Main Content */}
+      {/* ── Main content ─────────────────────────────────────────────────────── */}
       <div className={cn(
-        "flex-1 flex flex-col transition-all duration-500",
+        "flex-1 flex flex-col transition-all duration-300 min-w-0",
         isSidebarOpen ? "ml-52" : "ml-14"
       )}>
-        {/* Top Header */}
-        <header className="h-16 bg-white border-b border-black px-6 flex items-center justify-between sticky top-0 z-40">
-          <div className="flex items-center gap-6">
-            <button 
+
+        {/* Top header */}
+        <header className="h-16 bg-white border-b border-black/10 px-6 flex items-center justify-between sticky top-0 z-40 shadow-[0_1px_0_0_rgba(0,0,0,0.06)]">
+
+          {/* Left: toggle + search */}
+          <div className="flex items-center gap-5">
+            <button
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="w-8 h-8 border border-black flex items-center justify-center text-black hover:bg-black hover:text-white transition-all"
+              className="w-8 h-8 border border-black flex items-center justify-center text-black hover:bg-black hover:text-white transition-all flex-shrink-0"
+              aria-label={isSidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
             >
-              {isSidebarOpen ? <X size={16} /> : <Menu size={16} />}
+              {isSidebarOpen ? <X size={14} /> : <Menu size={14} />}
             </button>
-            <div className="hidden lg:flex items-center gap-3 bg-zinc-50 px-5 py-2.5 border border-black w-[320px] group focus-within:bg-white transition-all">
-              <Search size={14} className="text-zinc-400 group-focus-within:text-black transition-colors" />
-              <input 
-                type="text" 
-                placeholder="SEARCH OPERATIONS, DRONES, USERS..." 
-                className="bg-transparent focus:outline-none text-[7px] font-bold uppercase tracking-[0.3em] w-full placeholder:text-zinc-300" 
+            <div className="hidden lg:flex items-center gap-3 bg-zinc-50 px-4 py-2.5 border border-black/10 w-[260px] group focus-within:border-black focus-within:bg-white transition-all">
+              <Search size={13} className="text-zinc-300 group-focus-within:text-black transition-colors flex-shrink-0" />
+              <input
+                type="text"
+                placeholder="Search operations, drones..."
+                className="bg-transparent focus:outline-none text-[8px] font-bold uppercase tracking-[0.25em] w-full placeholder:text-zinc-300 text-black"
               />
             </div>
           </div>
 
-          <div className="flex items-center gap-6">
-            <div className="hidden sm:flex items-center gap-2.5">
-              <div className="w-7 h-7 border border-black flex items-center justify-center text-white bg-brand-accent">
-                <Zap size={14} />
-              </div>
-              <span className="text-[7px] font-bold uppercase tracking-widest">System Online</span>
+          {/* Right: status + notifications + user */}
+          <div className="flex items-center gap-5">
+
+            {/* System status */}
+            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 border border-black/10">
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-[7px] font-black uppercase tracking-widest text-zinc-500">
+                System Online
+              </span>
             </div>
 
-            <button className="relative w-8 h-8 border border-black flex items-center justify-center text-black hover:bg-black hover:text-white transition-all">
-              <Bell size={16} />
-              <span className="absolute -top-1 -right-1 w-3 h-3 bg-brand-accent border border-black flex items-center justify-center text-[6px] font-bold text-white">3</span>
-            </button>
+            {/* Notifications */}
+            <div className="relative">
+              <button
+                onClick={() => setShowNotifications(v => !v)}
+                className="relative w-8 h-8 border border-black/10 flex items-center justify-center text-zinc-500 hover:border-black hover:text-black transition-all"
+              >
+                <Bell size={14} />
+                <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-emerald-500 border border-white flex items-center justify-center text-[6px] font-black text-white">
+                  3
+                </span>
+              </button>
 
-            <div className="flex items-center gap-4 pl-6 border-l border-black">
+              {/* Notification dropdown */}
+              {showNotifications && (
+                <>
+                  {/* Backdrop */}
+                  <div className="fixed inset-0 z-40" onClick={() => setShowNotifications(false)} />
+                  <div className="absolute right-0 top-10 w-80 bg-white border border-black z-50 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                    <div className="flex items-center justify-between px-5 py-3.5 border-b border-black bg-black text-white">
+                      <p className="text-[8px] font-black uppercase tracking-[0.3em]">Notifications</p>
+                      <button onClick={() => setShowNotifications(false)} className="text-zinc-400 hover:text-white transition-colors">
+                        <X size={12} />
+                      </button>
+                    </div>
+                    {[
+                      { title: 'New Booking Received',    msg: 'Order #AGR0042 placed for Coimbatore — 3.5 acres.',  time: '2 min ago',  dot: 'bg-emerald-500' },
+                      { title: 'Battery Alert',           msg: 'AGR-003 battery at 18%. Immediate charging needed.', time: '15 min ago', dot: 'bg-red-500'     },
+                      { title: 'Mission Completed',       msg: 'AGR-001 completed spray at Salem — 5 acres.',        time: '1 hr ago',   dot: 'bg-blue-500'    },
+                    ].map((n, i) => (
+                      <div key={i} className="flex gap-3 px-5 py-4 border-b border-black/10 hover:bg-zinc-50 cursor-pointer transition-colors last:border-b-0">
+                        <div className={`w-2 h-2 rounded-full flex-shrink-0 mt-1.5 ${n.dot}`} />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[9px] font-black uppercase tracking-wide text-black mb-0.5">{n.title}</p>
+                          <p className="text-[9px] font-medium text-zinc-500 leading-snug">{n.msg}</p>
+                          <p className="text-[8px] font-black uppercase tracking-widest text-zinc-300 mt-1">{n.time}</p>
+                        </div>
+                      </div>
+                    ))}
+                    <div className="px-5 py-3 border-t border-black">
+                      <button className="w-full text-[8px] font-black uppercase tracking-widest text-zinc-400 hover:text-black transition-colors">
+                        Mark All as Read
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* User */}
+            <div className="flex items-center gap-3 pl-5 border-l border-black/10">
               <div className="text-right hidden md:block">
-                <p className="text-sm font-extrabold uppercase tracking-tight leading-none mb-1">Joel Gunaseelan</p>
-                <p className="text-[7px] font-bold uppercase tracking-widest text-zinc-400">Super Admin</p>
+                <p className="text-[10px] font-black uppercase tracking-tight leading-none mb-0.5 text-black">
+                  {displayName}
+                </p>
+                <p className="text-[7px] font-black uppercase tracking-widest text-zinc-400">
+                  {displayRole}
+                </p>
               </div>
-              <div className="w-10 h-10 bg-black text-white border border-black flex items-center justify-center font-bold text-base hover:bg-brand-accent hover:text-white transition-all cursor-pointer">
-                JG
+              <div
+                className="w-9 h-9 bg-black text-white border border-black flex items-center justify-center font-black text-xs cursor-pointer hover:border-[#4a9a40] transition-all"
+                title={displayName}
+              >
+                {initials}
               </div>
             </div>
           </div>
         </header>
 
-        <main className="p-8 relative z-10">
+        {/* Page content */}
+        <main className="p-8 relative z-10 min-h-0">
           <motion.div
             key={location.pathname}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.2 }}
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.18 }}
           >
             {children}
           </motion.div>

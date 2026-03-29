@@ -1,9 +1,9 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import {
-  ClipboardList, Drone as DroneIcon,
+  ClipboardList,
   Battery, AlertTriangle,
-  ArrowUpRight, Clock
+  ArrowUpRight, Clock, Plane
 } from 'lucide-react';
 import { useOrders, useDrones, useDashboardStats } from '../../hooks/useApi';
 import { cn } from '../../lib/utils';
@@ -17,16 +17,16 @@ export const AdminDashboard = () => {
   const MOCK_ORDERS = orders;
   const MOCK_DRONES = drones;
 
-  const totalOrders = stats?.total_bookings ?? MOCK_ORDERS.length;
-  const activeJobs = stats?.active_requests ?? MOCK_ORDERS.filter(o => o.status === 'In Progress').length;
-  const availDrones = stats?.active_drones ?? MOCK_DRONES.filter(d => d.status === 'Available').length;
-  const critBattery = MOCK_DRONES.filter(d => d.battery < 20).length;
+  const totalOrders  = stats?.total_bookings  ?? MOCK_ORDERS.length;
+  const activeJobs   = stats?.active_requests ?? MOCK_ORDERS.filter(o => o.status === 'In Progress').length;
+  const availDrones  = stats?.active_drones   ?? MOCK_DRONES.filter(d => d.status === 'Available').length;
+  const critBattery  = MOCK_DRONES.filter(d => d.battery < 20).length;
 
   const kpiCards = [
-    { label: 'Total Orders', value: totalOrders.toLocaleString(), change: 'All time', trend: 'up', icon: ClipboardList },
-    { label: 'Active Jobs', value: String(activeJobs), change: 'In progress', trend: 'up', icon: DroneIcon },
-    { label: 'Available Drones', value: String(availDrones), change: 'Ready now', trend: 'neutral', icon: DroneIcon },
-    { label: 'Battery Alerts', value: String(critBattery), change: critBattery > 0 ? 'Critical' : 'All Good', trend: critBattery > 0 ? 'down' : 'up', icon: Battery },
+    { label: 'Total Orders',     value: totalOrders.toLocaleString(), change: 'All time',   trend: 'up',                              icon: ClipboardList },
+    { label: 'Active Jobs',      value: String(activeJobs),           change: 'In progress', trend: 'up',                             icon: Plane         },
+    { label: 'Available Drones', value: String(availDrones),          change: 'Ready now',   trend: 'neutral',                        icon: Plane         },
+    { label: 'Battery Alerts',   value: String(critBattery),          change: critBattery > 0 ? 'Critical' : 'All Good', trend: critBattery > 0 ? 'down' : 'up', icon: Battery },
   ];
 
   const alerts = [
@@ -45,7 +45,12 @@ export const AdminDashboard = () => {
   ].slice(0, 4);
 
   if (alerts.length === 0) {
-    alerts.push({ id: 'ok', type: 'info', severity: 'info', title: 'All Systems Operational', message: 'No active alerts. Fleet is healthy and ready for deployment.', time: 'Now' });
+    alerts.push({
+      id: 'ok', type: 'info', severity: 'info',
+      title: 'All Systems Operational',
+      message: 'No active alerts. Fleet is healthy and ready for deployment.',
+      time: 'Now',
+    });
   }
 
   return (
@@ -54,14 +59,15 @@ export const AdminDashboard = () => {
         <div>
           <h1 className="text-3xl font-extrabold uppercase tracking-tight mb-1.5">Dashboard</h1>
           <p className="text-sm font-bold text-zinc-500">
-            Welcome back, <span className="text-black underline underline-offset-4 decoration-brand-accent">Admin</span>. Tamil Nadu fleet status overview.
+            Welcome back, <span className="text-black underline underline-offset-4">Admin</span>. Tamil Nadu fleet status overview.
           </p>
         </div>
         <div className="flex gap-2.5">
           <Link to="/admin/orders">
             <button className="dj-button-outline py-1.5 px-4 text-xs">View All Orders</button>
           </Link>
-          <Link to="/admin/schedule">
+          {/* FIX: was /admin/schedule — correct route is /admin/scheduling */}
+          <Link to="/admin/scheduling">
             <button className="dj-button-filled py-1.5 px-4 text-xs">Schedule Job</button>
           </Link>
         </div>
@@ -84,8 +90,9 @@ export const AdminDashboard = () => {
               </div>
               <div className={cn(
                 'text-[8px] font-bold uppercase tracking-[0.2em] px-2.5 py-1 border border-black',
-                stat.trend === 'up' ? 'bg-brand-accent text-black' :
-                stat.trend === 'down' ? 'bg-red-500 text-white' : 'bg-black text-white group-hover:bg-white group-hover:text-black'
+                stat.trend === 'up'      ? 'bg-[#4a9a40] text-white' :
+                stat.trend === 'down'    ? 'bg-red-500 text-white'   :
+                'bg-black text-white group-hover:bg-white group-hover:text-black'
               )}>
                 {stat.change}
               </div>
@@ -99,7 +106,7 @@ export const AdminDashboard = () => {
               transition={{ duration: 12, repeat: Infinity, ease: 'linear' }}
               className="absolute -right-4 top-1/2 opacity-[0.03] pointer-events-none group-hover:opacity-10 transition-opacity"
             >
-              <DroneIcon size={100} />
+              <Plane size={100} />
             </motion.div>
           </div>
         ))}
@@ -109,8 +116,10 @@ export const AdminDashboard = () => {
         {/* Recent Orders */}
         <div className="lg:col-span-8">
           <div className="flex justify-between items-center mb-6">
-            <h3 className="text-2xl font-extrabold uppercase tracking-tight">Recent <span className="text-italics lowercase text-zinc-400">activity.</span></h3>
-            <Link to="/admin/orders" className="text-[8px] font-bold uppercase tracking-[0.3em] underline underline-offset-8 hover:text-brand-accent transition-colors">
+            <h3 className="text-2xl font-extrabold uppercase tracking-tight">
+              Recent <span className="italic lowercase font-normal text-zinc-400">activity.</span>
+            </h3>
+            <Link to="/admin/orders" className="text-[8px] font-bold uppercase tracking-[0.3em] underline underline-offset-8 hover:text-[#4a9a40] transition-colors">
               View All
             </Link>
           </div>
@@ -137,8 +146,8 @@ export const AdminDashboard = () => {
                     <td className="p-5 border-r border-black/5">
                       <span className={cn(
                         'text-[8px] font-bold uppercase tracking-widest px-2.5 py-1 border border-black',
-                        order.status === 'Completed' ? 'bg-brand-accent text-white' :
-                        order.status === 'In Progress' ? 'bg-black text-white' : 'bg-white text-black'
+                        order.status === 'Completed'  ? 'bg-[#4a9a40] text-white' :
+                        order.status === 'In Progress' ? 'bg-black text-white'    : 'bg-white text-black'
                       )}>
                         {order.status}
                       </span>
@@ -161,10 +170,12 @@ export const AdminDashboard = () => {
         <div className="lg:col-span-4 space-y-8">
           <div>
             <div className="flex items-center gap-3 mb-5">
-              <div className="w-8 h-8 border border-black flex items-center justify-center text-white bg-brand-accent">
+              <div className="w-8 h-8 border border-black flex items-center justify-center text-white bg-[#4a9a40]">
                 <AlertTriangle size={16} />
               </div>
-              <h3 className="text-xl font-extrabold uppercase tracking-tight">Alerts <span className="text-italics lowercase text-zinc-400">center.</span></h3>
+              <h3 className="text-xl font-extrabold uppercase tracking-tight">
+                Alerts <span className="italic lowercase font-normal text-zinc-400">center.</span>
+              </h3>
             </div>
             <div className="space-y-0 border border-black bg-white">
               {alerts.map((alert, idx) => (
@@ -179,7 +190,8 @@ export const AdminDashboard = () => {
                     <p className={cn(
                       'text-[8px] font-bold uppercase tracking-[0.3em]',
                       alert.severity === 'critical' ? 'text-red-500 group-hover:text-red-400' :
-                      alert.severity === 'warning' ? 'text-orange-500 group-hover:text-orange-400' : 'text-zinc-400 group-hover:text-zinc-300'
+                      alert.severity === 'warning'  ? 'text-orange-500 group-hover:text-orange-400' :
+                      'text-zinc-400 group-hover:text-zinc-300'
                     )}>
                       {alert.title}
                     </p>
@@ -195,19 +207,19 @@ export const AdminDashboard = () => {
           </div>
 
           {/* Upcoming jobs */}
-          <div className="dj-card bg-black text-white border-none shadow-none p-6 relative overflow-hidden">
+          <div className="bg-black text-white p-6 relative overflow-hidden border border-black">
             <div className="relative z-10">
               <h3 className="text-xl font-extrabold uppercase tracking-tight mb-5">
-                Upcoming <span className="text-italics lowercase text-brand-accent">jobs.</span>
+                Upcoming <span className="italic lowercase font-normal" style={{ color: '#4a9a40' }}>jobs.</span>
               </h3>
               <div className="space-y-5">
                 {MOCK_ORDERS.filter(o => o.status === 'Scheduled').slice(0, 3).map((order) => (
                   <div key={order.id} className="flex gap-3 group cursor-pointer border-b border-white/10 pb-5 last:border-0 last:pb-0">
-                    <div className="w-10 h-10 border border-white/20 flex-shrink-0 flex flex-col items-center justify-center bg-white/5 group-hover:bg-brand-accent transition-all">
+                    <div className="w-10 h-10 border border-white/20 flex-shrink-0 flex flex-col items-center justify-center bg-white/5 group-hover:bg-[#4a9a40] transition-all">
                       <Clock size={16} />
                     </div>
                     <div className="flex-1">
-                      <p className="font-extrabold uppercase tracking-tight text-sm leading-none mb-1 group-hover:text-brand-accent transition-colors">{order.customerName}</p>
+                      <p className="font-extrabold uppercase tracking-tight text-sm leading-none mb-1 group-hover:text-[#4a9a40] transition-colors">{order.customerName}</p>
                       <div className="flex items-center gap-1.5 text-[7px] font-bold uppercase tracking-widest opacity-40 group-hover:opacity-100 transition-opacity">
                         {order.scheduledTime || order.date} · {order.area}
                       </div>
@@ -218,8 +230,9 @@ export const AdminDashboard = () => {
                   <p className="text-zinc-500 font-bold text-sm">No upcoming jobs scheduled.</p>
                 )}
               </div>
-              <Link to="/admin/schedule">
-                <button className="dj-button-filled w-full mt-8 bg-white text-black hover:bg-brand-accent transition-all py-2 text-[10px]">
+              {/* FIX: was /admin/schedule — correct route is /admin/scheduling */}
+              <Link to="/admin/scheduling">
+                <button className="dj-button-filled w-full mt-8 bg-white text-black hover:bg-[#4a9a40] hover:text-white transition-all py-2 text-[10px]">
                   Open Schedule
                 </button>
               </Link>

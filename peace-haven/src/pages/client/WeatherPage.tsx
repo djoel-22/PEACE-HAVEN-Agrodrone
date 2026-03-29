@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { motion } from 'motion/react';
 import {
-  CloudSun, Thermometer, Wind, Droplets,
-  CloudRain, AlertTriangle, CheckCircle2, MapPin, RefreshCw, Eye, Gauge
+  CloudSun, Wind, Droplets,
+  CloudRain, AlertTriangle, CheckCircle2, MapPin, RefreshCw, Eye
 } from 'lucide-react';
 import { useWeather, useAllCitiesWeather } from '../../hooks/useApi';
 import { cn } from '../../lib/utils';
@@ -20,21 +19,24 @@ export const WeatherPage = () => {
   const getSuitabilityInfo = (suitable: boolean, windSpeed: number) => {
     if (!suitable || windSpeed > 20) return {
       status: 'Not Recommended',
-      color: 'bg-red-600 text-white',
+      bgColor: 'bg-red-600',
+      textColor: 'text-white',
       icon: <AlertTriangle size={32} />,
       reason: windSpeed > 20 ? 'High wind speed detected' : 'Unfavorable conditions',
       description: 'Drone spraying is dangerous and ineffective. Please wait for better conditions.',
     };
     if (windSpeed > 12) return {
       status: 'Moderate Risk',
-      color: 'bg-black text-white',
+      bgColor: 'bg-black',
+      textColor: 'text-white',
       icon: <AlertTriangle size={32} />,
       reason: 'Moderate wind conditions',
       description: 'Proceed with caution. Smaller drones may experience drift. Consult your pilot.',
     };
     return {
       status: 'Safe to Spray',
-      color: 'bg-brand-accent text-black',
+      bgColor: '',
+      textColor: 'text-white',
       icon: <CheckCircle2 size={32} />,
       reason: 'Optimal conditions',
       description: 'Low wind, good visibility. Perfect for precision agricultural spraying.',
@@ -42,41 +44,25 @@ export const WeatherPage = () => {
   };
 
   const suitability = getSuitabilityInfo(weather.suitable_for_spraying, weather.windSpeed);
+  const isSafe = weather.suitable_for_spraying && weather.windSpeed <= 12;
 
   return (
     <div className="relative min-h-screen bg-white bg-grid overflow-hidden">
 
-      {/* ================= VIDEO BACKGROUND (FROM FILE 1) ================= */}
-      <div className="absolute inset-0 z-0 pointer-events-none bg-zinc-100 flex items-center justify-center overflow-hidden">
+      {/* Video Background */}
+      <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
         <video
           autoPlay
           loop
           muted
           playsInline
-          className="absolute inset-0 w-full h-full object-cover grayscale opacity-30"
-          onError={(e) => {
-            e.currentTarget.style.display = 'none';
-            const fallback = document.getElementById('weather-video-fallback');
-            if (fallback) fallback.style.display = 'flex';
-          }}
+          className="absolute inset-0 w-full h-full object-cover grayscale opacity-20"
         >
-          <source src="/weather-video.mp4" type="video/mp4" />
+          <source src="/videos/weather-video.mp4" type="video/mp4" />
         </video>
-        
-        {/* Fallback UI */}
-        <div id="weather-video-fallback" style={{ display: 'none' }} className="absolute inset-0 flex-col items-center justify-center text-zinc-400 opacity-60 z-0">
-          <CloudSun size={64} className="mb-4 animate-bounce" />
-          <p className="font-black uppercase tracking-widest text-sm text-center px-4">
-            Video not found.<br/>
-            Please upload your video to the <code className="bg-zinc-200 px-1 rounded text-black">/public</code> folder<br/>
-            and name it <code className="bg-zinc-200 px-1 rounded text-black">weather-video.mp4</code>
-          </p>
-        </div>
-
-        <div className="absolute inset-0 bg-gradient-to-b from-white/40 via-transparent to-white z-10" />
+        <div className="absolute inset-0 bg-gradient-to-b from-white/60 via-white/20 to-white/80" />
       </div>
 
-      {/* ================= MAIN CONTENT ================= */}
       <div className="max-w-6xl mx-auto px-5 py-16 relative z-10">
 
         {/* Header */}
@@ -126,16 +112,17 @@ export const WeatherPage = () => {
                     {selectedCity}, Tamil Nadu
                   </p>
                 </div>
-                <h2 className="text-2xl font-black uppercase tracking-tighter">{weather.condition}</h2>
+                <h2 className="text-2xl font-black uppercase tracking-tighter text-black">{weather.condition}</h2>
                 {weather.last_updated && (
                   <p className="text-[8px] text-zinc-400 font-bold mt-1">Updated: {weather.last_updated}</p>
                 )}
               </div>
               <div className="text-left md:text-right">
-                <p className="text-6xl font-black tracking-tighter leading-none mb-1.5">
+                <p className="text-6xl font-black tracking-tighter leading-none mb-1.5 text-black">
                   {loading ? '--' : `${weather.temp}°C`}
                 </p>
-                <p className="text-[8px] font-black uppercase tracking-widest text-brand-accent bg-black px-1.5 py-0.5 inline-block">
+                <p className="text-[8px] font-black uppercase tracking-widest bg-black px-1.5 py-0.5 inline-block"
+                   style={{ color: '#4a9a40' }}>
                   Feels like {loading ? '--' : `${weather.feels_like}°C`}
                 </p>
               </div>
@@ -143,10 +130,10 @@ export const WeatherPage = () => {
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-0 border border-black">
               {[
-                { icon: Droplets, label: 'Humidity', value: loading ? '--' : `${weather.humidity}%` },
-                { icon: Wind, label: 'Wind Speed', value: loading ? '--' : `${weather.windSpeed} km/h ${weather.wind_direction}` },
-                { icon: CloudRain, label: 'Rain Est.', value: loading ? '--' : `${weather.rainChance}%` },
-                { icon: Eye, label: 'Visibility', value: loading ? '--' : `${(weather as any).visibility ?? '--'} km` },
+                { icon: Droplets,  label: 'Humidity',   value: loading ? '--' : `${weather.humidity}%` },
+                { icon: Wind,      label: 'Wind Speed',  value: loading ? '--' : `${weather.windSpeed} km/h ${weather.wind_direction}` },
+                { icon: CloudRain, label: 'Rain Est.',   value: loading ? '--' : `${weather.rainChance}%` },
+                { icon: Eye,       label: 'Visibility',  value: loading ? '--' : `${(weather as any).visibility ?? '--'} km` },
               ].map((item, idx) => (
                 <div
                   key={item.label}
@@ -159,15 +146,18 @@ export const WeatherPage = () => {
                   <item.icon size={16} className="text-black mb-3" />
                   <div>
                     <p className="text-[8px] font-black uppercase tracking-widest text-zinc-400 mb-1">{item.label}</p>
-                    <p className="text-lg font-black tracking-tighter">{item.value}</p>
+                    <p className="text-lg font-black tracking-tighter text-black">{item.value}</p>
                   </div>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Suitability */}
-          <div className={cn('lg:col-span-4 p-8 flex flex-col justify-between min-h-[280px]', suitability.color)}>
+          {/* Suitability panel */}
+          <div
+            className={cn('lg:col-span-4 p-8 flex flex-col justify-between min-h-[280px]', suitability.bgColor, suitability.textColor)}
+            style={isSafe ? { backgroundColor: '#4a9a40' } : undefined}
+          >
             <div>
               <h3 className="text-[8px] font-black uppercase tracking-[0.3em] mb-6 opacity-70">Spray Suitability</h3>
               <div className="flex flex-col gap-4">
@@ -213,7 +203,7 @@ export const WeatherPage = () => {
                       <p className="text-[8px] font-black uppercase tracking-widest opacity-60">{c.city}</p>
                       <div className={cn(
                         'w-2 h-2',
-                        safe && !risky ? 'bg-brand-accent' : risky ? 'bg-orange-400' : 'bg-red-500'
+                        safe && !risky ? 'bg-[#4a9a40]' : risky ? 'bg-orange-400' : 'bg-red-500'
                       )} />
                     </div>
                     <p className="text-2xl font-black tracking-tighter">{c.temp}°</p>
@@ -223,7 +213,7 @@ export const WeatherPage = () => {
                     </p>
                     <p className={cn(
                       'text-[7px] font-black uppercase tracking-widest mt-2',
-                      safe && !risky ? 'text-green-600' : risky ? 'text-orange-500' : 'text-red-500',
+                      safe && !risky ? 'text-[#2a6a20]' : risky ? 'text-orange-500' : 'text-red-500',
                       selectedCity === c.city && 'text-current opacity-80'
                     )}>
                       {safe && !risky ? '✓ Safe' : risky ? '⚠ Caution' : '✗ Avoid'}
@@ -235,25 +225,19 @@ export const WeatherPage = () => {
           )}
         </div>
 
-        {/* Warning banners */}
         {!weather.suitable_for_spraying && !loading && (
           <div className="mt-10 p-6 bg-red-600 text-white border border-black flex items-center gap-4">
             <AlertTriangle size={20} />
-            <p className="text-base font-black uppercase">
-              Spraying not recommended in {selectedCity}
-            </p>
+            <p className="text-base font-black uppercase">Spraying not recommended in {selectedCity}</p>
           </div>
         )}
 
         {weather.suitable_for_spraying && weather.windSpeed > 12 && !loading && (
           <div className="mt-10 p-6 bg-orange-500 text-white border border-black flex items-center gap-4">
             <AlertTriangle size={20} />
-            <p className="text-base font-black uppercase">
-              Moderate wind — proceed with caution
-            </p>
+            <p className="text-base font-black uppercase">Moderate wind — proceed with caution</p>
           </div>
         )}
-
       </div>
     </div>
   );
