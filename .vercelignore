@@ -19,11 +19,9 @@ migrate_db_v3.py
 UPGRADE_GUIDE.md
 structure.txt
 
-# Frontend source (Vercel builds this separately)
+# Frontend node_modules only
 peace-haven/node_modules/
-peace-haven/src/
-peace-haven/.env*
-peace-haven/tsconfig.json
+peace-haven/.env.local
 
-# App static (Vercel serves from peace-haven/dist directly)
+# App static
 app/static/
