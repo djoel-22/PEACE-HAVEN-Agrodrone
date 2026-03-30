@@ -1,22 +1,55 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { Search, Plus, MoreVertical, X, Edit, MapPin, Drone as DroneIcon, Download } from 'lucide-react';
+import { Search, X, Edit, MapPin, Download, Star } from 'lucide-react';
 import { useAdminOrders, updateOrderStatus } from '../../hooks/useApi';
+import { apiFetch } from '../../lib/api';
 import { cn } from '../../lib/utils';
 
-const STATUS_VALUES = ['pending','scheduled','in_progress','completed'];
-const STATUS_LABELS = ['Placed','Scheduled','In Progress','Completed'];
+const STATUS_VALUES = ['pending', 'scheduled', 'in_progress', 'completed'];
+const STATUS_LABELS = ['Placed', 'Scheduled', 'In Progress', 'Completed'];
+
+interface FeedbackData {
+  exists: boolean;
+  overall_rating?: number;
+  spray_quality?: number | null;
+  pilot_behavior?: number | null;
+  timeliness?: number | null;
+  comments?: string | null;
+  would_recommend?: boolean;
+  submitted_at?: string | null;
+}
+
+const StarDisplay = ({ rating }: { rating: number | null | undefined }) => {
+  if (!rating) return <span className="text-zinc-300 text-[8px] font-bold">—</span>;
+  return (
+    <div className="flex gap-0.5">
+      {Array.from({ length: 5 }).map((_, i) => (
+        <Star key={i} size={11}
+          className={i < rating ? 'text-yellow-400 fill-yellow-400' : 'text-zinc-200 fill-zinc-200'} />
+      ))}
+    </div>
+  );
+};
+
+// Lucide doesn't have Drone — use Plane substitute
+const DroneIcon = ({ size }: { size: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M17.8 19.2L16 11l3.5-3.5C21 6 21 4 19 4s-2 1.5-3.5 3L7 11l-8 2.2 3.5 3.5L11 16l-1 6 2-2 2-4 2 4 2-2z"/>
+  </svg>
+);
 
 export const AdminOrdersPage = () => {
   const { data: orders, refetch } = useAdminOrders();
   const MOCK_ORDERS = orders;
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm]     = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
-  const [editStatus, setEditStatus] = useState('');
-  const [editDrone, setEditDrone] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [saveMsg, setSaveMsg] = useState('');
+  const [editStatus, setEditStatus]     = useState('');
+  const [editDrone, setEditDrone]       = useState('');
+  const [saving, setSaving]             = useState(false);
+  const [saveMsg, setSaveMsg]           = useState('');
+  const [feedback, setFeedback]         = useState<FeedbackData | null>(null);
+  const [feedbackLoading, setFeedbackLoading] = useState(false);
 
   const filteredOrders = MOCK_ORDERS.filter(order => {
     const matchesSearch =
@@ -33,6 +66,16 @@ export const AdminOrdersPage = () => {
     setEditStatus(be);
     setEditDrone(order.droneId || '');
     setSaveMsg('');
+    setFeedback(null);
+    // Load feedback if order is completed
+    if (order.status === 'Completed') {
+      const numId = parseInt(order.id.replace(/\D/g, ''), 10);
+      setFeedbackLoading(true);
+      apiFetch<FeedbackData>(`/api/feedback/order/${numId}`)
+        .then(d => setFeedback(d))
+        .catch(() => setFeedback({ exists: false }))
+        .finally(() => setFeedbackLoading(false));
+    }
   };
 
   const handleUpdate = async () => {
@@ -53,7 +96,7 @@ export const AdminOrdersPage = () => {
 
   const handleExport = () => {
     const rows = [
-      ['Order ID','Customer','Phone','Location','Area','Crop/Pesticide','Status','Date'],
+      ['Order ID', 'Customer', 'Phone', 'Location', 'Area', 'Crop/Pesticide', 'Status', 'Date'],
       ...filteredOrders.map(o => [o.id, o.customerName, o.phone, o.location, o.area, o.cropType, o.status, o.date])
     ];
     const csv = rows.map(r => r.map(c => `"${c}"`).join(',')).join('\n');
@@ -68,16 +111,17 @@ export const AdminOrdersPage = () => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-8">
         <div>
           <h1 className="text-4xl font-extrabold uppercase tracking-tight mb-2.5">Orders</h1>
-          <p className="text-base font-bold text-zinc-500">Manage, assign, and track all <span className="text-black underline underline-offset-4 decoration-brand-accent decoration-2">customer bookings</span> in Tamil Nadu.</p>
+          <p className="text-base font-bold text-zinc-500">
+            Manage, assign, and track all <span className="text-black underline underline-offset-4 decoration-2">customer bookings</span> in Tamil Nadu.
+          </p>
         </div>
-        <div className="flex gap-2.5">
-          <button onClick={handleExport} className="dj-button-outline py-2 px-5 text-[10px] flex items-center gap-2">
-            <Download size={14} /> Export CSV
-          </button>
-        </div>
+        <button onClick={handleExport} className="dj-button-outline py-2 px-5 text-[10px] flex items-center gap-2">
+          <Download size={14} /> Export CSV
+        </button>
       </div>
 
       <div className="border border-black bg-white overflow-hidden">
+        {/* Filters */}
         <div className="p-6 border-b border-black flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-zinc-50">
           <div className="relative flex-1 max-w-lg border border-black group bg-white">
             <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-zinc-400 group-focus-within:text-black transition-colors" size={18} />
@@ -105,6 +149,7 @@ export const AdminOrdersPage = () => {
           </div>
         </div>
 
+        {/* Table */}
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -123,7 +168,7 @@ export const AdminOrdersPage = () => {
                 <tr key={order.id} className="group hover:bg-zinc-50 transition-all cursor-pointer" onClick={() => openOrder(order)}>
                   <td className="px-8 py-6 border-r border-black/5">
                     <div className="flex items-center gap-5">
-                      <div className="w-10 h-10 border border-black flex items-center justify-center text-black font-bold text-base group-hover:bg-brand-accent group-hover:text-white transition-all duration-500">
+                      <div className="w-10 h-10 border border-black flex items-center justify-center text-black font-bold text-base group-hover:bg-[#4a9a40] group-hover:text-white transition-all duration-500">
                         {order.id.slice(-2)}
                       </div>
                       <div>
@@ -139,7 +184,7 @@ export const AdminOrdersPage = () => {
                         <MapPin size={14} className="text-zinc-400" />{order.location}
                       </div>
                       <div className="text-[8px] text-zinc-400 font-bold uppercase tracking-[0.2em]">
-                        {order.cropType} • {order.area}
+                        {order.cropType} · {order.area}
                       </div>
                       {order.date && <div className="text-[8px] text-zinc-300 font-bold">{order.date}</div>}
                     </div>
@@ -157,7 +202,7 @@ export const AdminOrdersPage = () => {
                   <td className="px-8 py-6 border-r border-black/5">
                     <span className={cn(
                       'text-[8px] font-bold uppercase tracking-widest px-3 py-1.5 border border-black',
-                      order.status === 'Completed' ? 'bg-brand-accent text-white' :
+                      order.status === 'Completed'  ? 'bg-[#4a9a40] text-white' :
                       order.status === 'In Progress' ? 'bg-black text-white' : 'bg-white text-black'
                     )}>
                       {order.status}
@@ -165,7 +210,8 @@ export const AdminOrdersPage = () => {
                   </td>
                   <td className="px-8 py-6 text-right">
                     <div className="flex justify-end gap-2.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={(e) => { e.stopPropagation(); openOrder(order); }} className="w-8 h-8 border border-black flex items-center justify-center hover:bg-black hover:text-white transition-all">
+                      <button onClick={(e) => { e.stopPropagation(); openOrder(order); }}
+                        className="w-8 h-8 border border-black flex items-center justify-center hover:bg-black hover:text-white transition-all">
                         <Edit size={16} />
                       </button>
                     </div>
@@ -189,26 +235,32 @@ export const AdminOrdersPage = () => {
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-white border border-black w-full max-w-xl overflow-hidden"
+            className="bg-white border border-black w-full max-w-xl overflow-hidden max-h-[90vh] overflow-y-auto"
           >
-            <div className="p-8 border-b border-black flex justify-between items-center bg-zinc-50">
+            {/* Modal header */}
+            <div className="p-8 border-b border-black flex justify-between items-center bg-zinc-50 sticky top-0 z-10">
               <div>
-                <h3 className="text-3xl font-extrabold uppercase tracking-tight leading-none">Order <span className="text-italics lowercase text-zinc-400">details.</span></h3>
+                <h3 className="text-3xl font-extrabold uppercase tracking-tight leading-none">
+                  Order <span className="italic lowercase text-zinc-400">details.</span>
+                </h3>
                 <p className="text-zinc-400 font-bold uppercase tracking-widest text-[8px] mt-2.5">{selectedOrder.id}</p>
               </div>
-              <button onClick={() => setSelectedOrder(null)} className="w-10 h-10 border border-black flex items-center justify-center hover:bg-black hover:text-white transition-all">
+              <button onClick={() => setSelectedOrder(null)}
+                className="w-10 h-10 border border-black flex items-center justify-center hover:bg-black hover:text-white transition-all">
                 <X size={20} />
               </button>
             </div>
+
             <div className="p-8 space-y-8">
+              {/* Order info */}
               <div className="grid grid-cols-2 gap-8">
                 {[
-                  ['Customer', selectedOrder.customerName],
-                  ['Phone', selectedOrder.phone || '—'],
-                  ['Location', selectedOrder.location],
-                  ['Area', selectedOrder.area],
+                  ['Customer',         selectedOrder.customerName],
+                  ['Phone',            selectedOrder.phone || '—'],
+                  ['Location',         selectedOrder.location],
+                  ['Area',             selectedOrder.area],
                   ['Pesticide / Crop', selectedOrder.cropType],
-                  ['Date', selectedOrder.date || '—'],
+                  ['Date',             selectedOrder.date || '—'],
                 ].map(([label, val]) => (
                   <div key={label} className="space-y-1">
                     <p className="text-[8px] font-bold text-zinc-400 uppercase tracking-[0.3em]">{label}</p>
@@ -217,6 +269,7 @@ export const AdminOrdersPage = () => {
                 ))}
               </div>
 
+              {/* Update assignment */}
               <div className="p-6 border border-black bg-zinc-50 space-y-6">
                 <h4 className="text-[9px] font-bold uppercase tracking-widest text-black">Update Assignment</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -244,13 +297,70 @@ export const AdminOrdersPage = () => {
                   </div>
                 </div>
                 {saveMsg && (
-                  <p className={cn('text-[9px] font-bold uppercase tracking-widest', saveMsg.startsWith('Error') ? 'text-red-600' : 'text-green-600')}>
+                  <p className={cn('text-[9px] font-bold uppercase tracking-widest',
+                    saveMsg.startsWith('Error') ? 'text-red-600' : 'text-green-600')}>
                     {saveMsg}
                   </p>
                 )}
               </div>
+
+              {/* Feedback panel — only for completed orders */}
+              {selectedOrder.status === 'Completed' && (
+                <div className="border border-black overflow-hidden">
+                  <div className="px-6 py-4 bg-black text-white flex items-center gap-2">
+                    <Star size={14} style={{ color: '#fbbf24' }} />
+                    <p className="text-[9px] font-black uppercase tracking-[0.3em]">Customer Feedback</p>
+                  </div>
+                  <div className="p-6">
+                    {feedbackLoading ? (
+                      <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">Loading...</p>
+                    ) : !feedback || !feedback.exists ? (
+                      <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">
+                        No feedback submitted yet for this order.
+                      </p>
+                    ) : (
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          {[
+                            { label: 'Overall',       val: feedback.overall_rating  },
+                            { label: 'Spray Quality', val: feedback.spray_quality   },
+                            { label: 'Pilot',         val: feedback.pilot_behavior  },
+                            { label: 'Timeliness',    val: feedback.timeliness      },
+                          ].map(({ label, val }) => (
+                            <div key={label} className="space-y-1.5">
+                              <p className="text-[8px] font-bold text-zinc-400 uppercase tracking-[0.3em]">{label}</p>
+                              <StarDisplay rating={val} />
+                            </div>
+                          ))}
+                        </div>
+                        <div className="flex items-center justify-between pt-3 border-t border-black/10">
+                          <p className="text-[8px] font-bold text-zinc-400 uppercase tracking-[0.3em]">Would Recommend</p>
+                          <span className={cn('text-[8px] font-bold uppercase tracking-widest px-2.5 py-1 border',
+                            feedback.would_recommend
+                              ? 'border-[#4a9a40] text-[#4a9a40] bg-[#4a9a40]/5'
+                              : 'border-zinc-300 text-zinc-400')}>
+                            {feedback.would_recommend ? 'Yes' : 'No'}
+                          </span>
+                        </div>
+                        {feedback.comments && (
+                          <div className="p-4 bg-zinc-50 border border-black/10">
+                            <p className="text-[8px] font-bold text-zinc-400 uppercase tracking-[0.3em] mb-2">Comment</p>
+                            <p className="text-sm font-bold text-zinc-700 leading-relaxed">"{feedback.comments}"</p>
+                          </div>
+                        )}
+                        {feedback.submitted_at && (
+                          <p className="text-[8px] font-bold text-zinc-300 uppercase tracking-widest">
+                            Submitted {new Date(feedback.submitted_at).toLocaleDateString('en-IN')}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
-            <div className="p-8 bg-zinc-50 flex gap-3 border-t border-black">
+
+            <div className="p-8 bg-zinc-50 flex gap-3 border-t border-black sticky bottom-0">
               <button onClick={handleUpdate} disabled={saving} className="dj-button-filled flex-1 h-14 text-base disabled:opacity-50">
                 {saving ? 'Saving...' : 'Update Order'}
               </button>

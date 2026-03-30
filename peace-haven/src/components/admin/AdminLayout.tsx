@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'motion/react';
 import {
   LayoutDashboard, ClipboardList, Calendar,
-  Plane, Battery, CloudSun,
+  Plane, Battery, CloudSun, Star,
   Users, Settings, LogOut, Bell, Search, Menu, X
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
@@ -56,21 +56,22 @@ export const AdminLayout = ({ children }: { children: React.ReactNode }) => {
   const handleLogout = async () => {
     setLoggingOut(true);
     try {
-      await adminLogout(); // calls server + clears tokens + redirects
+      await adminLogout();
     } catch {
       // adminLogout redirects in finally block even on error
     }
   };
 
   const menuItems = [
-    { name: 'Dashboard',       path: '/admin',            icon: LayoutDashboard },
-    { name: 'Orders',          path: '/admin/orders',     icon: ClipboardList   },
-    { name: 'Scheduling',      path: '/admin/scheduling', icon: Calendar        },
-    { name: 'Drones',          path: '/admin/drones',     icon: Plane           },
-    { name: 'Battery Health',  path: '/admin/battery',    icon: Battery         },
-    { name: 'Weather Monitor', path: '/admin/weather',    icon: CloudSun        },
-    { name: 'Users',           path: '/admin/users',      icon: Users           },
-    { name: 'Settings',        path: '/admin/settings',   icon: Settings        },
+    { name: 'Dashboard',       path: '/admin',             icon: LayoutDashboard },
+    { name: 'Orders',          path: '/admin/orders',      icon: ClipboardList   },
+    { name: 'Scheduling',      path: '/admin/scheduling',  icon: Calendar        },
+    { name: 'Drones',          path: '/admin/drones',      icon: Plane           },
+    { name: 'Battery Health',  path: '/admin/battery',     icon: Battery         },
+    { name: 'Weather Monitor', path: '/admin/weather',     icon: CloudSun        },
+    { name: 'Feedback',        path: '/admin/feedback',    icon: Star            },
+    { name: 'Users',           path: '/admin/users',       icon: Users           },
+    { name: 'Settings',        path: '/admin/settings',    icon: Settings        },
   ];
 
   const isActive = (path: string) =>
@@ -228,10 +229,8 @@ export const AdminLayout = ({ children }: { children: React.ReactNode }) => {
                 </span>
               </button>
 
-              {/* Notification dropdown */}
               {showNotifications && (
                 <>
-                  {/* Backdrop */}
                   <div className="fixed inset-0 z-40" onClick={() => setShowNotifications(false)} />
                   <div className="absolute right-0 top-10 w-80 bg-white border border-black z-50 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                     <div className="flex items-center justify-between px-5 py-3.5 border-b border-black bg-black text-white">
@@ -241,9 +240,9 @@ export const AdminLayout = ({ children }: { children: React.ReactNode }) => {
                       </button>
                     </div>
                     {[
-                      { title: 'New Booking Received',    msg: 'Order #AGR0042 placed for Coimbatore — 3.5 acres.',  time: '2 min ago',  dot: 'bg-emerald-500' },
-                      { title: 'Battery Alert',           msg: 'AGR-003 battery at 18%. Immediate charging needed.', time: '15 min ago', dot: 'bg-red-500'     },
-                      { title: 'Mission Completed',       msg: 'AGR-001 completed spray at Salem — 5 acres.',        time: '1 hr ago',   dot: 'bg-blue-500'    },
+                      { title: 'New Booking Received', msg: 'Order #AGR0042 placed for Coimbatore — 3.5 acres.',  time: '2 min ago',  dot: 'bg-emerald-500' },
+                      { title: 'Battery Alert',        msg: 'AGR-003 battery at 18%. Immediate charging needed.', time: '15 min ago', dot: 'bg-red-500'     },
+                      { title: 'Mission Completed',    msg: 'AGR-001 completed spray at Salem — 5 acres.',        time: '1 hr ago',   dot: 'bg-blue-500'    },
                     ].map((n, i) => (
                       <div key={i} className="flex gap-3 px-5 py-4 border-b border-black/10 hover:bg-zinc-50 cursor-pointer transition-colors last:border-b-0">
                         <div className={`w-2 h-2 rounded-full flex-shrink-0 mt-1.5 ${n.dot}`} />
@@ -267,12 +266,8 @@ export const AdminLayout = ({ children }: { children: React.ReactNode }) => {
             {/* User */}
             <div className="flex items-center gap-3 pl-5 border-l border-black/10">
               <div className="text-right hidden md:block">
-                <p className="text-[10px] font-black uppercase tracking-tight leading-none mb-0.5 text-black">
-                  {displayName}
-                </p>
-                <p className="text-[7px] font-black uppercase tracking-widest text-zinc-400">
-                  {displayRole}
-                </p>
+                <p className="text-[10px] font-black uppercase tracking-tight leading-none mb-0.5 text-black">{displayName}</p>
+                <p className="text-[7px] font-black uppercase tracking-widest text-zinc-400">{displayRole}</p>
               </div>
               <div
                 className="w-9 h-9 bg-black text-white border border-black flex items-center justify-center font-black text-xs cursor-pointer hover:border-[#4a9a40] transition-all"

@@ -21,6 +21,7 @@ import { AdminBatteryPage }        from './pages/admin/AdminBatteryPage';
 import { AdminWeatherMonitorPage } from './pages/admin/AdminWeatherMonitorPage';
 import { AdminUsersPage }          from './pages/admin/AdminUsersPage';
 import { AdminSettingsPage }       from './pages/admin/AdminSettingsPage';
+import { AdminFeedbackPage }       from './pages/admin/AdminFeedbackPage';
 
 // Auth
 import { AdminLoginPage }  from './pages/AdminLoginPage';
@@ -126,6 +127,7 @@ export default function App() {
         <Route path="/admin/drones"      element={<AdminRoute><AdminLayout><AdminDronesPage /></AdminLayout></AdminRoute>} />
         <Route path="/admin/battery"     element={<AdminRoute><AdminLayout><AdminBatteryPage /></AdminLayout></AdminRoute>} />
         <Route path="/admin/weather"     element={<AdminRoute><AdminLayout><AdminWeatherMonitorPage /></AdminLayout></AdminRoute>} />
+        <Route path="/admin/feedback"    element={<AdminRoute><AdminLayout><AdminFeedbackPage /></AdminLayout></AdminRoute>} />
         <Route path="/admin/users"       element={<AdminRoute><AdminLayout><AdminUsersPage /></AdminLayout></AdminRoute>} />
         <Route path="/admin/settings"    element={<AdminRoute><AdminLayout><AdminSettingsPage /></AdminLayout></AdminRoute>} />
 
