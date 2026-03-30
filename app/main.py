@@ -176,23 +176,17 @@ if not IS_VERCEL:
 def health_check():
     from app.services.ai_service import get_ai
     ai = get_ai()
+    ai_status = ai.status() if ai else {"available": False, "error": "not initialized"}
+    # Run a live Gemini test call so we can see the exact error
+    ai_test_result = ai.test_call() if ai else {"success": False, "error": "not initialized"}
     return {
         "status":   "ok",
         "version":  "3.0.0",
         "env":      ENV,
         "platform": "vercel" if IS_VERCEL else "local",
-        "ai":       ai.status() if ai else {"available": False, "error": "not initialized"},
+        "ai":       ai_status,
+        "ai_test":  ai_test_result,
     }
-
-
-# ── AI debug endpoint ─────────────────────────────────────────────────────────
-@app.get("/ai-test", tags=["System"])
-def ai_test():
-    from app.services.ai_service import get_ai
-    ai = get_ai()
-    if not ai:
-        return {"error": "AI not initialized — init_ai() was never called"}
-    return ai.test_call()
 
 
 # ── DB init + seed ────────────────────────────────────────────────────────────
