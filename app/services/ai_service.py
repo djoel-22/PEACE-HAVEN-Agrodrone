@@ -1,6 +1,7 @@
 """
-services/ai_service.py — Gemini AI service
+services/ai_service.py – Gemini AI service
 Updated to use google-genai (replaces deprecated google-generativeai)
+With better error logging to diagnose Vercel issues
 """
 import time
 import logging
@@ -19,12 +20,12 @@ for Tamil Nadu, India. You help farmers with:
 - Pricing and service information
 
 Services offered:
-- Pesticide Spraying: Rs.1,200/hectare
-- Fertilizer Application: Rs.1,000/hectare
-- Crop Monitoring: Rs.800/hectare
-- Field Mapping: Rs.1,500/hectare
-- Soil Analysis: Rs.2,000/hectare
-Minimum charge: Rs.1,500
+- Pesticide Spraying: Rs.599/acre
+- Fertilizer Application: Rs.599/acre
+- Crop Monitoring: Rs.420/acre
+- Field Mapping: Rs.720/acre
+- Soil Analysis: Rs.810/acre
+Minimum charge: Rs.599
 
 Be helpful, concise, and use simple language suitable for farmers.
 Always respond in the same language as the user (Tamil or English).
@@ -37,50 +38,61 @@ class GeminiService:
         self._client = None
         self._model_name = None
         self._use_new_sdk = False
+        self._init_error = None
         self._init_model()
 
     def _init_model(self):
         if not self.api_key:
-            logger.warning("No Gemini API key provided")
+            logger.warning("⚠️ No Gemini API key provided – AI disabled")
+            self._init_error = "No API key"
             return
+
+        logger.info("🔄 Initializing Gemini AI with key: %s...", self.api_key[:8])
 
         # Try new google-genai package first
         try:
             from google import genai
-            self._client = genai.Client(api_key=self.api_key)
+            client = genai.Client(api_key=self.api_key)
+            # Test with a quick call to verify key works
+            self._client = client
             self._model_name = "gemini-2.0-flash"
             self._use_new_sdk = True
-            logger.info("✅ Gemini AI ready (new SDK): %s", self._model_name)
+            logger.info("✅ Gemini AI ready (google-genai SDK): %s", self._model_name)
             return
-        except ImportError:
-            pass
+        except ImportError as e:
+            logger.warning("google-genai not available: %s", e)
         except Exception as e:
-            logger.warning("New Gemini SDK failed: %s", e)
+            logger.warning("google-genai init failed: %s", e)
 
         # Fall back to old google-generativeai
         try:
             import google.generativeai as genai
             genai.configure(api_key=self.api_key)
-            for model_name in ["gemini-1.5-flash", "gemini-pro"]:
+            for model_name in ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-pro"]:
                 try:
-                    self._client = genai.GenerativeModel(model_name)
+                    client = genai.GenerativeModel(model_name)
+                    self._client = client
                     self._model_name = model_name
                     self._use_new_sdk = False
-                    logger.info("✅ Gemini AI ready (old SDK): %s", model_name)
+                    logger.info("✅ Gemini AI ready (google-generativeai SDK): %s", model_name)
                     return
-                except Exception:
+                except Exception as me:
+                    logger.warning("Model %s failed: %s", model_name, me)
                     continue
-        except ImportError:
-            pass
+        except ImportError as e:
+            logger.warning("google-generativeai not available: %s", e)
         except Exception as e:
-            logger.warning("Old Gemini SDK failed: %s", e)
+            logger.warning("google-generativeai init failed: %s", e)
 
-        logger.warning("⚠️  Gemini AI unavailable")
+        self._init_error = "Both SDKs failed to initialize"
+        logger.error("❌ Gemini AI unavailable – all SDKs failed. init_error=%s", self._init_error)
 
     def ask(self, prompt: str, phone: str = "", intent: str = "general",
             db: Session = None) -> str:
         if not self._client:
-            return "AI assistant is temporarily unavailable. Please type *menu* to use the booking system."
+            logger.error("AI ask() called but client is None. init_error=%s", self._init_error)
+            return ("🌾 I'm unable to answer right now (AI service unavailable).\n\n"
+                    "For bookings type *1*, for pricing type *3*, or type *menu*.")
 
         full_prompt = f"{AGRO_SYSTEM_PROMPT}\n\nUser message: {prompt}"
         start = time.time()
@@ -97,11 +109,14 @@ class GeminiService:
             else:
                 response = self._client.generate_content(full_prompt)
                 response_text = response.text.strip()
+
+            logger.info("✅ Gemini response (%dms): %s...", int((time.time()-start)*1000), response_text[:60])
+
         except Exception as e:
             error_msg = str(e)
-            logger.error("Gemini error: %s", e)
-            response_text = ("I couldn't process that right now. "
-                             "For bookings, type *menu*. For support, call us directly.")
+            logger.error("❌ Gemini generate error: %s", e)
+            response_text = ("🌾 I couldn't process that right now. "
+                             "For bookings type *menu*. For support call us directly.")
 
         latency_ms = int((time.time() - start) * 1000)
 
@@ -126,6 +141,14 @@ class GeminiService:
     def is_available(self) -> bool:
         return self._client is not None
 
+    def status(self) -> dict:
+        return {
+            "available": self._client is not None,
+            "model": self._model_name,
+            "sdk": "google-genai" if self._use_new_sdk else "google-generativeai",
+            "error": self._init_error,
+        }
+
 
 # Singleton
 _service: GeminiService = None
@@ -133,6 +156,7 @@ _service: GeminiService = None
 def init_ai(api_key: str):
     global _service
     _service = GeminiService(api_key)
+    logger.info("AI status: %s", _service.status())
 
 def get_ai() -> GeminiService:
     return _service

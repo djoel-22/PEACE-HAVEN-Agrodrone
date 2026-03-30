@@ -2,13 +2,14 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Search, ChevronRight, Sprout, MapPin, Calendar,
-  ClipboardList, X, Phone, Plane, Link as LinkIcon
+  ClipboardList, X, Link as LinkIcon, Star
 } from 'lucide-react';
 import { Badge } from '../../components/shared/UI';
 import { useOrders } from '../../hooks/useApi';
 import { cn } from '../../lib/utils';
 import { Link } from 'react-router-dom';
 import type { Order } from '../../types';
+import { FeedbackModal } from '../../components/client/FeedbackModal';
 
 const getStatusVariant = (status: string): 'success' | 'info' | 'warning' | 'active' => {
   switch (status) {
@@ -23,7 +24,8 @@ export const MyOrdersPage = () => {
   const { data: orders, loading } = useOrders();
   const [filterStatus, setFilterStatus] = useState('All');
   const [search, setSearch]             = useState('');
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [selectedOrder, setSelectedOrder]   = useState<Order | null>(null);
+  const [feedbackOrder, setFeedbackOrder]   = useState<Order | null>(null);
 
   const filtered = orders.filter(o => {
     const matchStatus = filterStatus === 'All' || o.status === filterStatus;
@@ -33,6 +35,12 @@ export const MyOrdersPage = () => {
       (o.location || '').toLowerCase().includes(search.toLowerCase());
     return matchStatus && matchSearch;
   });
+
+  // Extract numeric ID from booking ID like AGR0042 → 42
+  const getNumericId = (bookingId: string): number => {
+    const match = bookingId.match(/\d+/);
+    return match ? parseInt(match[0], 10) : 0;
+  };
 
   return (
     <div className="relative min-h-screen bg-white bg-grid">
@@ -90,13 +98,11 @@ export const MyOrdersPage = () => {
                         <p className="text-sm font-black text-black">{order.id}</p>
                       </div>
                       <div className="flex items-center gap-2.5 w-36">
-                        {/* FIX: was bg-brand-accent (dark green) with no explicit text color = unreadable
-                            Now: bg-black with white icon = always readable */}
                         <div className="w-8 h-8 border border-black flex items-center justify-center bg-black text-white">
                           <Sprout size={16} />
                         </div>
                         <div>
-                          <p className="text-[8px] font-black text-zinc-400 uppercase tracking-[0.2em]">Pesticide</p>
+                          <p className="text-[8px] font-black text-zinc-400 uppercase tracking-[0.2em]">Crop</p>
                           <p className="text-sm font-black uppercase tracking-tight text-black">{order.cropType}</p>
                         </div>
                       </div>
@@ -114,8 +120,19 @@ export const MyOrdersPage = () => {
                         <Badge variant={getStatusVariant(order.status)} className="border border-black">{order.status}</Badge>
                       </div>
                     </div>
-                    <div className="w-8 h-8 border border-black flex items-center justify-center text-black group-hover:bg-black group-hover:text-white transition-all">
-                      <ChevronRight size={16} />
+                    <div className="flex items-center gap-2">
+                      {order.status === 'Completed' && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setFeedbackOrder(order); }}
+                          className="flex items-center gap-1.5 px-3 py-1.5 border border-[#4a9a40] text-[#4a9a40] text-[8px] font-black uppercase tracking-widest hover:bg-[#4a9a40] hover:text-white transition-all"
+                        >
+                          <Star size={10} />
+                          Rate
+                        </button>
+                      )}
+                      <div className="w-8 h-8 border border-black flex items-center justify-center text-black group-hover:bg-black group-hover:text-white transition-all">
+                        <ChevronRight size={16} />
+                      </div>
                     </div>
                   </div>
                 </motion.div>
@@ -136,7 +153,7 @@ export const MyOrdersPage = () => {
         )}
       </div>
 
-      {/* Detail modal */}
+      {/* Order Detail Modal */}
       <AnimatePresence>
         {selectedOrder && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-5">
@@ -165,7 +182,7 @@ export const MyOrdersPage = () => {
                   {[
                     ['Customer',        selectedOrder.customerName],
                     ['Phone',           selectedOrder.phone || '—'],
-                    ['Pesticide / Crop',selectedOrder.cropType],
+                    ['Crop Type',       selectedOrder.cropType],
                     ['Land Area',       selectedOrder.area],
                     ['Location',        selectedOrder.location],
                     ['Scheduled Date',  selectedOrder.date || '—'],
@@ -180,10 +197,18 @@ export const MyOrdersPage = () => {
                 </div>
 
                 <div className="flex gap-3">
+                  {selectedOrder.status === 'Completed' && (
+                    <button
+                      onClick={() => { setSelectedOrder(null); setFeedbackOrder(selectedOrder); }}
+                      className="flex-1 h-12 border-2 border-[#4a9a40] text-[#4a9a40] font-black uppercase tracking-widest text-sm hover:bg-[#4a9a40] hover:text-white transition-all flex items-center justify-center gap-2"
+                    >
+                      <Star size={14} /> Rate Service
+                    </button>
+                  )}
                   <button onClick={() => setSelectedOrder(null)} className="dj-button-filled flex-1 py-3 text-base">Close</button>
                   <Link to="/track" className="flex-1">
                     <button className="dj-button-outline w-full py-3 text-base flex items-center justify-center gap-2">
-                      <LinkIcon size={14} /> Track Order
+                      <LinkIcon size={14} /> Track
                     </button>
                   </Link>
                 </div>
@@ -192,6 +217,16 @@ export const MyOrdersPage = () => {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Feedback Modal */}
+      {feedbackOrder && (
+        <FeedbackModal
+          orderId={getNumericId(feedbackOrder.id)}
+          bookingId={feedbackOrder.id}
+          pilotName={feedbackOrder.droneId || undefined}
+          onClose={() => setFeedbackOrder(null)}
+        />
+      )}
     </div>
   );
 };

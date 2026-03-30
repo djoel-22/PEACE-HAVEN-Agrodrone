@@ -1,7 +1,8 @@
 """
-app/db/models.py  —  All SQLAlchemy ORM models for AgroDrone
+app/db/models.py  –  All SQLAlchemy ORM models for AgroDrone
 EXTENDED v3: Added ClientUser model with secure auth fields,
              refresh_token + token_version to AdminUser for rotation,
+             ServiceFeedback for post-service ratings,
              all original models preserved exactly.
 """
 import enum
@@ -114,7 +115,7 @@ class Drone(Base):
                                       cascade="all, delete-orphan",
                                       foreign_keys="DroneBattery.drone_db_id")
 
-# ── Extended models (original, unchanged) ────────────────────────────────────
+# ── Extended models ───────────────────────────────────────────────────────────
 
 class DroneBattery(Base):
     __tablename__ = "drone_batteries"
@@ -148,63 +149,44 @@ class ScheduledJob(Base):
     color               = Column(String(10), default="#22c55e")
     created_at          = Column(DateTime, default=datetime.utcnow)
 
-# ── Auth models (upgraded) ────────────────────────────────────────────────────
+# ── Auth models ───────────────────────────────────────────────────────────────
 
 class AdminUser(Base):
-    """Admin portal users.
-    Added: refresh_token (hashed), token_version (increment to invalidate all tokens),
-    failed_login_attempts + locked_until (brute-force protection).
-    password_hash now stores bcrypt (256 chars), old SHA-256 hashes auto-migrate on first login.
-    """
     __tablename__ = "admin_users"
     id                    = Column(Integer, primary_key=True, index=True)
     username              = Column(String(80), unique=True, index=True)
-    password_hash         = Column(String(256))                          # bcrypt hash
+    password_hash         = Column(String(256))
     full_name             = Column(String(120))
-    role                  = Column(String(20), default="admin")          # admin | superadmin
+    role                  = Column(String(20), default="admin")
     is_active             = Column(Boolean, default=True)
-    # Refresh token rotation
-    refresh_token_hash    = Column(String(256), nullable=True)           # bcrypt hash of last issued refresh token
-    token_version         = Column(Integer, default=0)                   # increment = invalidate all sessions
-    # Brute-force protection
+    refresh_token_hash    = Column(String(256), nullable=True)
+    token_version         = Column(Integer, default=0)
     failed_login_attempts = Column(Integer, default=0)
     locked_until          = Column(DateTime, nullable=True)
-    # Audit
     last_login            = Column(DateTime)
-    last_login_ip         = Column(String(45), nullable=True)            # IPv4 or IPv6
+    last_login_ip         = Column(String(45), nullable=True)
     created_at            = Column(DateTime, default=datetime.utcnow)
     updated_at            = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
 class ClientUser(Base):
-    """Client (farmer) portal users — separate table from AdminUser.
-    Clients log in with phone number (primary) or email.
-    Linked to Customer record via customer_id (nullable on first registration).
-    """
     __tablename__ = "client_users"
     id                    = Column(Integer, primary_key=True, index=True)
-    # Identifiers
     phone_number          = Column(String(20), unique=True, index=True, nullable=False)
     email                 = Column(String(120), unique=True, index=True, nullable=True)
     full_name             = Column(String(120))
-    # Auth
-    password_hash         = Column(String(256))                          # bcrypt hash
+    password_hash         = Column(String(256))
     refresh_token_hash    = Column(String(256), nullable=True)
     token_version         = Column(Integer, default=0)
-    # Status
     is_active             = Column(Boolean, default=True)
-    is_verified           = Column(Boolean, default=False)               # phone/email verified
-    # Brute-force protection
+    is_verified           = Column(Boolean, default=False)
     failed_login_attempts = Column(Integer, default=0)
     locked_until          = Column(DateTime, nullable=True)
-    # Link to Customer record (optional — set when customer books first service)
     customer_id           = Column(Integer, ForeignKey("customers.id"), nullable=True)
-    # Audit
     last_login            = Column(DateTime)
     last_login_ip         = Column(String(45), nullable=True)
     created_at            = Column(DateTime, default=datetime.utcnow)
     updated_at            = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    # Relationship
     customer              = relationship("Customer", foreign_keys=[customer_id])
 
 
@@ -219,3 +201,23 @@ class AILog(Base):
     latency_ms  = Column(Integer)
     error       = Column(Text)
     created_at  = Column(DateTime, default=datetime.utcnow)
+
+
+# ── Feedback model (NEW) ──────────────────────────────────────────────────────
+
+class ServiceFeedback(Base):
+    """Customer feedback after service completion."""
+    __tablename__ = "service_feedback"
+    id                 = Column(Integer, primary_key=True, index=True)
+    service_request_id = Column(Integer, ForeignKey("service_requests.id"), unique=True)
+    customer_id        = Column(Integer, ForeignKey("customers.id"))
+    overall_rating     = Column(Integer, nullable=False)
+    spray_quality      = Column(Integer, nullable=True)
+    pilot_behavior     = Column(Integer, nullable=True)
+    timeliness         = Column(Integer, nullable=True)
+    comments           = Column(Text, nullable=True)
+    pilot_name         = Column(String(80), nullable=True)
+    would_recommend    = Column(Boolean, default=True)
+    submitted_at       = Column(DateTime, default=datetime.utcnow)
+    service_request    = relationship("ServiceRequest", foreign_keys=[service_request_id])
+    customer           = relationship("Customer", foreign_keys=[customer_id])

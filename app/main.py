@@ -1,5 +1,5 @@
 """
-app/main.py — AgroDrone Enhanced Entry Point v3
+app/main.py – AgroDrone Enhanced Entry Point v3
 Works locally (with uvicorn) AND on Vercel (serverless).
 """
 from __future__ import annotations
@@ -17,15 +17,16 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.config import GEMINI_API_KEY
 
-# ── Routers ────────────────────────────────────────────────────────────────────
+# ── Routers ───────────────────────────────────────────────────────────────────
 from app.api.dashboard_api    import router as dashboard_router
 from app.api.whatsapp_webhook import router as whatsapp_router
 from app.api.battery_api      import router as battery_router
 from app.api.scheduling_api   import router as scheduling_router
 from app.api.tracking_api     import router as tracking_router
 from app.api.admin_api        import router as admin_router
+from app.api.feedback_api     import router as feedback_router
 
-# ── Logging ────────────────────────────────────────────────────────────────────
+# ── Logging ───────────────────────────────────────────────────────────────────
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
@@ -33,7 +34,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger("agrodrone")
 
-# ── Environment ────────────────────────────────────────────────────────────────
+# ── Environment ───────────────────────────────────────────────────────────────
 ENV           = os.environ.get("APP_ENV", "development")
 IS_PRODUCTION = ENV == "production"
 IS_VERCEL     = os.environ.get("VERCEL") == "1"
@@ -48,7 +49,7 @@ if VERCEL_URL and f"https://{VERCEL_URL}" not in ALLOWED_ORIGINS:
     ALLOWED_ORIGINS.append(f"https://{VERCEL_URL}")
 
 
-# ── Security headers middleware ────────────────────────────────────────────────
+# ── Security headers middleware ───────────────────────────────────────────────
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         response: Response = await call_next(request)
@@ -62,7 +63,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         return response
 
 
-# ── Rate limiting ──────────────────────────────────────────────────────────────
+# ── Rate limiting ─────────────────────────────────────────────────────────────
 try:
     from slowapi import Limiter, _rate_limit_exceeded_handler
     from slowapi.util import get_remote_address
@@ -74,20 +75,20 @@ try:
 except ImportError:
     limiter = None
     RATE_LIMIT_AVAILABLE = False
-    logger.warning("⚠️  slowapi not installed — rate limiting disabled.")
+    logger.warning("⚠️  slowapi not installed – rate limiting disabled.")
 
 
-# ── FastAPI app ────────────────────────────────────────────────────────────────
+# ── FastAPI app ───────────────────────────────────────────────────────────────
 app = FastAPI(
     title="AgroDrone SaaS Platform",
-    description="Professional Agricultural Drone Service Management — Peace Haven",
+    description="Professional Agricultural Drone Service Management – Peace Haven",
     version="3.0.0",
     docs_url=None if (IS_PRODUCTION or IS_VERCEL) else "/docs",
     redoc_url=None if (IS_PRODUCTION or IS_VERCEL) else "/redoc",
     openapi_url=None if (IS_PRODUCTION or IS_VERCEL) else "/openapi.json",
 )
 
-# ── Middleware ─────────────────────────────────────────────────────────────────
+# ── Middleware ────────────────────────────────────────────────────────────────
 app.add_middleware(SecurityHeadersMiddleware)
 
 if RATE_LIMIT_AVAILABLE:
@@ -104,13 +105,14 @@ app.add_middleware(
     max_age=600,
 )
 
-# ── Routers ────────────────────────────────────────────────────────────────────
+# ── Routers ───────────────────────────────────────────────────────────────────
 app.include_router(dashboard_router)
 app.include_router(whatsapp_router)
 app.include_router(battery_router)
 app.include_router(scheduling_router)
 app.include_router(tracking_router)
 app.include_router(admin_router)
+app.include_router(feedback_router)
 
 
 # ── Static files (local dev only) ─────────────────────────────────────────────
@@ -169,26 +171,27 @@ if not IS_VERCEL:
         return _spa_response()
 
 
-# ── Health check ───────────────────────────────────────────────────────────────
+# ── Health check ──────────────────────────────────────────────────────────────
 @app.get("/health", tags=["System"])
 def health_check():
+    from app.services.ai_service import get_ai
+    ai = get_ai()
     return {
-        "status": "ok",
-        "version": "3.0.0",
-        "env": ENV,
+        "status":   "ok",
+        "version":  "3.0.0",
+        "env":      ENV,
         "platform": "vercel" if IS_VERCEL else "local",
+        "ai":       ai.status() if ai else {"available": False, "error": "not initialized"},
     }
 
 
-# ── DB init + seed — runs once on startup ─────────────────────────────────────
+# ── DB init + seed ────────────────────────────────────────────────────────────
 def _init_and_seed():
-    """Initialize DB tables then seed default admin. Safe to call multiple times."""
     from app.db.database import init_db, SessionLocal
     from app.db.models import AdminUser
     from app.utils.auth import hash_password
     import sqlalchemy
 
-    # 1. Create all tables first
     try:
         init_db()
         logger.info("✅ Database initialized")
@@ -196,7 +199,6 @@ def _init_and_seed():
         logger.error("❌ Database init failed: %s", e)
         raise
 
-    # 2. Seed admin only after tables exist — wrapped in its own try/except
     db = SessionLocal()
     try:
         count = db.query(AdminUser).count()
@@ -208,11 +210,10 @@ def _init_and_seed():
                 role="superadmin",
             ))
             db.commit()
-            logger.info("✅ Default admin seeded — username: admin")
+            logger.info("✅ Default admin seeded – username: admin")
         else:
             logger.info("✅ Admin users already exist (%d)", count)
     except sqlalchemy.exc.ProgrammingError as e:
-        # Tables might not exist yet on very first cold start race condition
         logger.warning("⚠️  Admin seed skipped (table not ready): %s", e)
         db.rollback()
     except Exception as e:
@@ -222,22 +223,17 @@ def _init_and_seed():
         db.close()
 
 
-# ── Startup event ──────────────────────────────────────────────────────────────
+# ── Startup event ─────────────────────────────────────────────────────────────
 @app.on_event("startup")
 def startup():
     logger.info("🚀 AgroDrone Platform v3.0 starting... [env=%s, vercel=%s]", ENV, IS_VERCEL)
-
     _init_and_seed()
-
     from app.services.ai_service import init_ai
     init_ai(GEMINI_API_KEY)
-
     logger.info("✅ AgroDrone Platform ready")
 
 
-# ── Vercel: also run init at module import time ────────────────────────────────
-# On Vercel, startup events may not fire reliably on cold starts.
-# Running init at import ensures tables exist before any request hits.
+# ── Vercel: also run init at module import time ───────────────────────────────
 if IS_VERCEL:
     try:
         _init_and_seed()
