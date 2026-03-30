@@ -184,12 +184,14 @@ def health_check():
         "ai":       ai.status() if ai else {"available": False, "error": "not initialized"},
     }
 
+
+# ── AI debug endpoint ─────────────────────────────────────────────────────────
 @app.get("/ai-test", tags=["System"])
 def ai_test():
     from app.services.ai_service import get_ai
     ai = get_ai()
     if not ai:
-        return {"error": "AI not initialized"}
+        return {"error": "AI not initialized — init_ai() was never called"}
     return ai.test_call()
 
 
