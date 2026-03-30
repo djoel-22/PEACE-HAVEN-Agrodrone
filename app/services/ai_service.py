@@ -50,15 +50,26 @@ class GeminiService:
 
         logger.info("Initializing Gemini AI with key: %s...", self.api_key[:8])
 
-        # Try new google-genai package first
+        # Try new google-genai package, with model fallback for quota limits
         try:
             from google import genai
             client = genai.Client(api_key=self.api_key)
-            self._client = client
-            self._model_name = "gemini-2.0-flash"
-            self._use_new_sdk = True
-            logger.info("Gemini AI ready (google-genai SDK): %s", self._model_name)
-            return
+            # Try models in order — fall back if quota exhausted
+            for model_name in ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro"]:
+                try:
+                    test = client.models.generate_content(
+                        model=model_name,
+                        contents="hi",
+                    )
+                    _ = test.text  # will throw if quota exceeded
+                    self._client = client
+                    self._model_name = model_name
+                    self._use_new_sdk = True
+                    logger.info("Gemini AI ready (google-genai SDK): %s", model_name)
+                    return
+                except Exception as me:
+                    logger.warning("Model %s failed during init test: %s", model_name, me)
+                    continue
         except ImportError as e:
             logger.warning("google-genai not available: %s", e)
         except Exception as e:
@@ -115,9 +126,32 @@ class GeminiService:
         except Exception as e:
             error_msg = str(e)
             self._last_error = error_msg
-            logger.error("Gemini generate error [%s]: %s", type(e).__name__, e)
-            response_text = ("I couldn't process that right now. "
-                             "For bookings type *menu*. For support call us directly.")
+            # If quota exhausted on current model, try fallback models
+            if "429" in error_msg or "RESOURCE_EXHAUSTED" in error_msg:
+                fallback_models = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-2.0-flash-lite"]
+                for fb_model in fallback_models:
+                    if fb_model == self._model_name:
+                        continue
+                    try:
+                        if self._use_new_sdk:
+                            response = self._client.models.generate_content(
+                                model=fb_model, contents=full_prompt,
+                            )
+                            response_text = response.text.strip()
+                        else:
+                            response_text = "Fallback unavailable"
+                        self._model_name = fb_model
+                        self._last_error = None
+                        logger.info("Gemini fallback OK with %s", fb_model)
+                        error_msg = None
+                        break
+                    except Exception as fe:
+                        logger.warning("Fallback model %s also failed: %s", fb_model, fe)
+                        continue
+            if error_msg:
+                logger.error("Gemini generate error [%s]: %s", type(e).__name__, e)
+                response_text = ("🌾 I couldn't process that right now. "
+                                 "For bookings type *menu*. For support call us directly.")
 
         latency_ms = int((time.time() - start) * 1000)
 
