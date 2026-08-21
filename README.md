@@ -206,47 +206,19 @@ The application provides an integrated experience for:
 
 ---
 
-# 📸 Screenshots
 
-Add screenshots of the deployed application here.
-
-Recommended screenshots:
-
-### 🏠 Landing Page
-
-![AgroDrone Landing Page](docs/screenshots/landing-page.png)
-
-### 📊 Dashboard
-
-![AgroDrone Dashboard](docs/screenshots/dashboard.png)
-
-### 🚁 Drone / Field Monitoring
-
-![Drone Field Monitoring](docs/screenshots/drone-monitoring.png)
-
-### 🌱 Agricultural Analysis
-
-![Agricultural Analysis](docs/screenshots/crop-analysis.png)
-
-### 🤖 AI Insights
-
-![AI Agricultural Insights](docs/screenshots/ai-insights.png)
-
-> If your repository uses a different screenshots directory, update these paths accordingly.
-
----
 
 # 🌐 Live Application
 
 The project is intended to be deployed as a production-ready web application.
 
 **Live Demo:**  
-Add your deployed application URL here.
+https://peace-haven-agrodrone-frontend.vercel.app/
 
 **Repository:**  
 https://github.com/djoel-22/PEACE-HAVEN-Agrodrone
 
-> When the repository is renamed, replace the repository URL above with the new `AgroDrone` repository URL.
+
 
 ---
 
